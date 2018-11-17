@@ -17,7 +17,6 @@ app = flask.Flask(__name__)
 def index():
     return ''
 
-
 @app.route(WEBHOOK_URL_PATH, methods=['POST'])
 def webhook():
     if flask.request.headers.get('content-type') == 'application/json':
@@ -28,7 +27,6 @@ def webhook():
     else:
         flask.abort(403)
 
-
 @app.route('/set_webhook', methods=['GET', 'POST'])
 def set_webhook():
     bot.remove_webhook()
@@ -36,7 +34,6 @@ def set_webhook():
     bot.set_webhook(url=WEBHOOK_URL_BASE + WEBHOOK_URL_PATH,
                     certificate=open(WEBHOOK_SSL_CERT, 'r'))
     return ''
-
 
 @bot.message_handler(commands=['help', 'start'])
 def send_welcome(message):
