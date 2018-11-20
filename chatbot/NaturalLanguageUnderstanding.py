@@ -1,2 +1,2 @@
 def NamedEntityRecognition(message):
-    return message.split()
+    return message.split(), list()
