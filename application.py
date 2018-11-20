@@ -8,6 +8,8 @@ from config import WEBHOOK_SSL_CERT
 from config import WEBHOOK_URL_BASE
 from config import WEBHOOK_URL_PATH
 
+from chatbot import NaturalLanguageUnderstanding as NLU
+
 logger = telebot.logger
 telebot.logger.setLevel(logging.DEBUG)
 bot = telebot.TeleBot(API_TOKEN, threaded=False)
@@ -41,7 +43,8 @@ def send_welcome(message):
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def echo_message(message):
-    bot.send_message(message.chat.id, message.text)
+    msg_split, ner = NLU.NamedEntityRecognition(message.text)
+    bot.send_message(message.chat.id, msg_split[0])
 
 if __name__ == "__main__":
     app.run()
