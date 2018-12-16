@@ -81,19 +81,19 @@ class MoviePlot:
         print(long)
         if long:
             text_tok = MoviePlot._tokenize_text_long(text)
-            pred = model_long.infer_vector(text_tok)
-            movies = model_long.docvecs.most_similar([pred], topn = n_matches)
+            pred = MoviePlot.model_long.infer_vector(text_tok)
+            movies = MoviePlot.model_long.docvecs.most_similar([pred], topn = n_matches)
     
         else:
             text_tok = MoviePlot._tokenize_text_short(text)
-            pred = model_short.infer_vector(text_tok)
-            movies = model_short.docvecs.most_similar([pred], topn = n_matches)
+            pred = MoviePlot.model_short.infer_vector(text_tok)
+            movies = MoviePlot.model_short.docvecs.most_similar([pred], topn = n_matches)
                     
         titles = [t for t, _ in movies]
         
         plots = []
         for title in titles:
-            plots.append(df['Plot'][df.Title == title].values[0])
+            plots.append(MoviePlot.df['Plot'][MoviePlot.df.Title == title].values[0])
         
         plots = np.array(plots)[:,None]
         
