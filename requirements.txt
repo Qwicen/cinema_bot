@@ -1,5 +1,4 @@
 deeppavlov
-pandas
 uwsgi 
 flask
 pathlib
