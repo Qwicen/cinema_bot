@@ -1,3 +1,5 @@
 uwsgi 
 flask
 pyTelegramBotAPI
+deeppavlov
+pathlib
