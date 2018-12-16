@@ -40,7 +40,7 @@ class MoviePlot:
         """ Tokenizing text to list of words for modified plot
         """
         
-        with open(root_path + 'dict_not_used_words.pkl', 'rb') as fin:
+        with open(MoviePlot.root_path + 'dict_not_used_words.pkl', 'rb') as fin:
             dict_ = pickle.load(fin)
             
         tokens = []
