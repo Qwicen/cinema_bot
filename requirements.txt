@@ -3,3 +3,4 @@ flask
 pyTelegramBotAPI
 deeppavlov
 pathlib
+gensim
