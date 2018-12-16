@@ -9,7 +9,7 @@ import pickle
 
 class MoviePlot:
     
-    root_path = "models/plot2movie"
+    root_path = "models/plot2movie/"
     
     # keep movies's plots
     df = pd.read_csv(root_path + 'wiki_movie_plots_deduped.csv')
