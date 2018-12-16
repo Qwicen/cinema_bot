@@ -1,12 +1,11 @@
+from deeppavlov import configs, build_model
+from deeppavlov import train_model
 import pandas as pd
 import numpy as np
 import nltk
 from nltk.corpus import stopwords
 from gensim.models import Doc2Vec
 import pickle
-
-def NamedEntityRecognition(message):
-    return message.split(), list()
 
 class MoviePlot:
     
@@ -104,3 +103,15 @@ class MoviePlot:
         data = pd.DataFrame(sim_doc, columns=['Title', 'Year', 'Director', 'Plot'])
             
         return data
+      
+class NER:
+
+    ner_model = build_model("./deeppavlov/ner_config.json", download=True)
+
+    def train():
+        train_model("./deeppavlov/ner_config.json", download=True)
+        NER.ner_model = build_model("./deeppavlov/ner_config.json", download=True)
+
+    def NamedEntityRecognition(message):
+        ner = NER.ner_model([message])
+        return ner[0][0], ner[1][0]
