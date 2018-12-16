@@ -134,9 +134,9 @@
     },
     "metadata": {
       "variables": {
-        "ROOT_PATH": "./deeppavlov/",
+        "ROOT_PATH": "./models/",
         "DOWNLOADS_PATH": "{ROOT_PATH}/downloads",
-        "MODELS_PATH": "{ROOT_PATH}/models"
+        "MODELS_PATH": "{ROOT_PATH}/"
       },
       "requirements": [
         "{DEEPPAVLOV_PATH}/requirements/gensim.txt",

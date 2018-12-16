@@ -12,7 +12,7 @@ class MoviePlot:
     root_path = "models/plot2movie/"
     
     # keep movies's plots
-    df = pd.read_csv(root_path + 'wiki_movie_plots_deduped.csv')
+    df = pd.read_csv('data/wiki_movie_plots_deduped.csv')
     df['Title'] = df['Title'] + ' - ' + df['Release Year'].astype(str) + ' - ' + df['Director']
     df = df[['Title', 'Plot']]
     
@@ -105,12 +105,12 @@ class MoviePlot:
         return data
       
 class NER:
-
-    ner_model = build_model("./deeppavlov/ner_config.json", download=True)
+    config = "./models/ner_config.json"
+    ner_model = build_model(config, download=True)
 
     def train():
-        train_model("./deeppavlov/ner_config.json", download=True)
-        NER.ner_model = build_model("./deeppavlov/ner_config.json", download=True)
+        train_model(NER.config, download=True)
+        NER.ner_model = build_model(NER.config, download=True)
 
     def NamedEntityRecognition(message):
         ner = NER.ner_model([message])
