@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/popov/Documents/bots/cinema_bot/deeppavlov/models/ner/model"
+all_model_checkpoint_paths: "/home/popov/Documents/bots/cinema_bot/deeppavlov/models/ner/model"
