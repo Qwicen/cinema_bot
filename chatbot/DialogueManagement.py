@@ -1,44 +1,65 @@
-# -*- coding: utf-8 -*-
-
 from vedis import Vedis
-import telebot
-import config
-import dbworker
 
-bot = telebot.TeleBot(config.token)
+class States:
+    S_START = "0"
+    S_SEARCH = "1"
+    S_RESULT = "2"
 
-# Начало диалога
-@bot.message_handler(commands=["start"])
-def cmd_start(message):
-    bot.send_message(message.chat.id, "Please desctribe the movie you would like me to find")
-    dbworker.set_state(message.chat.id, config.States.S_SEARCH.value)
+    db_state = "db_state.vdb"
+    db_search = "db_search.vdb"
 
+    # Пытаемся узнать из базы «состояние» пользователя
+    @staticmethod
+    def get_current_state(user_id):
+        with Vedis(States.db_state) as db:
+            try:
+                return db[user_id]
+            except KeyError:  # Если такого ключа почему-то не оказалось
+                return States.S_START.value  # значение по умолчанию - начало диалога
 
-# По команде /reset будем сбрасывать состояния, возвращаясь к началу диалога
-@bot.message_handler(commands=["reset"])
-def cmd_reset(message):
-    bot.send_message(message.chat.id, "Starting over. Please write the movie desctiption")
-    dbworker.set_state(message.chat.id, config.States.S_ENTER_NAME.value)
+    # Сохраняем текущее «состояние» пользователя в нашу базу
+    @staticmethod
+    def set_state(user_id, value):
+        with Vedis(States.db_state) as db:
+            try:
+                db[user_id] = value
+                return True
+            except:
+                # тут желательно как-то обработать ситуацию
+                return False
 
-@bot.message_handler(func=lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_SEARCH.value)
-def user_entering_descкiption(message):
-    # Если не удалось найти фильм (или другое условие, по которому мы просим уточнить описание)
-    if """ Nothing was found """:
-        # Состояние не меняем, просим уточнить
-        bot.send_message(message.chat.id, "Please be more spectific with the description")
-        return
-    else:
-        # Если получили положительный результат
-        bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
-        dbworker.set_state(message.chat.id, config.States.S_RESULT.value)
+    # Записываем запрос по пользователю
+    @staticmethod
+    def set_user_descr(user_id, description):
+        with Vedis(States.db_search) as db:
+            try:
+                db[user_id] = description
+                return True
+            except:
+                return False
 
+    @staticmethod
+    def get_user_descr(user_id, description):
+        with Vedis(States.db_search) as db:
+            try:
+                return db[user_id]
+            except KeyError:
+                return None
 
-@bot.message_handler(func= lambda message: dbworker.get_current_state(message.chat.id) == config.States.S_RESULT.value)
-def user_sending_photo(message):
-    # Здесь выводим результат
-    bot.send_message(message.chat.id, "Here you go! **RESULT** If you want to try some other description, just type in /start")
-    dbworker.set_state(message.chat.id, config.States.S_START.value)
+    # Записываем фильм, который вернулся по запросу
+    @staticmethod
+    def set_descr_movie(description, movie):
+        with Vedis(States.db_search) as db:
+            try:
+                db[description] = movie
+                return True
+            except:
+                return False
 
-
-if __name__ == "__main__":
-    bot.polling(none_stop=True)
+    @staticmethod
+    def get_descr_movie(description, movie):
+        with Vedis(States.db_search) as db:
+            try:
+                return db[description]
+            except KeyError:
+                return None
