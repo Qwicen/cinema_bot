@@ -56,7 +56,7 @@ def user_entering_description(message):
         markup.row_width = 2
         markup.add(telebot.types.InlineKeyboardButton("Back", callback_data=f"back"),
                    telebot.types.InlineKeyboardButton("Next", callback_data=f"next"))
-        films = json.loads(dm.get_request(message.chat.id, message.message_id))
+        films = json.loads(dm.get_request(message.chat.id, message.message_id + 2))
         response = generateMarkdownMessage(films['results'][0], page=1)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
         bot.send_message(message.chat.id, response, 
@@ -75,7 +75,7 @@ def user_clarifying(message):
         markup.row_width = 2
         markup.add(telebot.types.InlineKeyboardButton("Back", callback_data=f"back"),
                    telebot.types.InlineKeyboardButton("Next", callback_data=f"next"))
-        films = json.loads(dm.get_request(message.chat.id, message.message_id))
+        films = json.loads(dm.get_request(message.chat.id, message.message_id + 2))
         response = generateMarkdownMessage(films['results'][0], page=1)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
         bot.send_message(message.chat.id, response, 
@@ -88,8 +88,9 @@ def user_clarifying(message):
 def pipeline(message):
     # Все нашли
     films = dm.api_discover(config.DB_API_TOKEN, genres=[28], actors=[117642])
-    dm.save_request(message.chat.id, message.message_id, films)
-    dm.save_page(message.chat.id, message.message_id, page=1)
+    # Target message will be shifted by two : user_msg, found_msg, target_msg
+    dm.save_request(message.chat.id, message.message_id + 2, films)
+    dm.save_page(message.chat.id, message.message_id + 2, page=1)
     return True
     
 
