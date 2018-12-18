@@ -56,8 +56,8 @@ def user_entering_description(message):
         markup.row_width = 2
         markup.add(telebot.types.InlineKeyboardButton("Back", callback_data=f"back"),
                    telebot.types.InlineKeyboardButton("Next", callback_data=f"next"))
-        films = to_json(dm.get_request(message.chat.id, message.message_id))
-        response = generateMarkdownMessage(films[0], page=1)
+        films = json.loads(dm.get_request(message.chat.id, message.message_id))
+        response = generateMarkdownMessage(films['results'][0], page=1)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
         bot.send_message(message.chat.id, response, 
                     disable_notification=True, reply_markup=markup, parse_mode='Markdown')
@@ -75,8 +75,8 @@ def user_clarifying(message):
         markup.row_width = 2
         markup.add(telebot.types.InlineKeyboardButton("Back", callback_data=f"back"),
                    telebot.types.InlineKeyboardButton("Next", callback_data=f"next"))
-        films = to_json(dm.get_request(message.chat.id, message.message_id))
-        response = generateMarkdownMessage(films[0], page=1)
+        films = json.loads(dm.get_request(message.chat.id, message.message_id))
+        response = generateMarkdownMessage(films['results'][0], page=1)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
         bot.send_message(message.chat.id, response, 
                     disable_notification=True, reply_markup=markup, parse_mode='Markdown')
@@ -87,7 +87,7 @@ def user_clarifying(message):
 
 def pipeline(message):
     # Все нашли
-    films = dm.api_discover(config.DB_API_TOKEN, n_matches=3, genres=[28], actors=[117642])
+    films = dm.api_discover(config.DB_API_TOKEN, genres=[28], actors=[117642])
     dm.save_request(message.chat.id, message.message_id, films)
     dm.save_page(message.chat.id, message.message_id, page=1)
     return True
@@ -104,15 +104,9 @@ def callback_query(call):
             current_page += 1
 
     dm.save_page(call.message.chat.id, call.message.message_id, current_page)
-    films = to_json(dm.get_request(message.chat.id, message.message_id))
-    response = generateMarkdownMessage(films[current_page], page=current_page)
+    films = json.loads(dm.get_request(call.message.chat.id, call.message.message_id))
+    response = generateMarkdownMessage(films['results'][current_page], page=current_page)
     bot.edit_message_text(response, call.message.chat.id, call.message.message_id)
-
-def to_json(string):
-    string = string.replace("\'", "\"")
-    string = string.replace("False", "\"False\"")
-    string = string.replace("True", "\"True\"")
-    return json.loads(string)
 
 if __name__ == "__main__":
     app.run()

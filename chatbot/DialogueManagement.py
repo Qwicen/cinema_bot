@@ -63,7 +63,7 @@ def get_page(user_id, message_id):
         except KeyError:
             print("KeyError. There is no user_id-message_id combination")
 
-def api_discover(api_key, n_matches=5, genres=None, people=None, actors=None, crew=None, year=None):
+def api_discover(api_key, genres=None, people=None, actors=None, crew=None, year=None):
     url = "https://api.themoviedb.org/3/discover/movie"
     payload = { 'api_key': api_key,
                 'with_genres': genres,
@@ -73,4 +73,4 @@ def api_discover(api_key, n_matches=5, genres=None, people=None, actors=None, cr
                 'year': year,
                 'sort_by': 'vote_average.desc'}
     response = requests.request('GET', url, data=payload)
-    return response.json()['results'][:n_matches]
+    return response.text
