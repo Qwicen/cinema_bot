@@ -27,31 +27,18 @@ def set_state(user_id, value):
             print("KeyError. There is no user ", user_id, ", doing nothing")
             return False
 # Записываем запрос по пользователю
-def set_user_descr(user_id, description):
+def save_request(user_id, message_id, films):
     with Vedis(States.db_search) as db:
         try:
-            db[user_id] = description
+            key = str(user_id) + str(message_id)
+            db[key] = films
             return True
         except KeyError:
-            print("KeyError. There is no user ", user_id, ", doing nothing")
-def get_user_descr(user_id, description):
+            print("KeyError. There is no user_id-message_id combination")
+def get_request(user_id, message_id):
     with Vedis(States.db_search) as db:
         try:
-            return db[user_id].decode()
+            key = str(user_id) + str(message_id)
+            return db[key].decode()
         except KeyError:
-            print("KeyError. There is no user ", user_id, ", doing nothing")
-# Записываем фильм, который вернулся по запросу
-def set_descr_movie(description, movie):
-    with Vedis(States.db_search) as db:
-        try:
-            db[description] = movie
-            return True
-        except KeyError:
-            print("KeyError. There is no description ", description, ", doing nothing")
-            return False
-def get_descr_movie(description, movie):
-    with Vedis(States.db_search) as db:
-        try:
-            return db[description].decode()
-        except KeyError:
-            print("KeyError. There is no description ", description, ", doing nothing")
+            print("KeyError. There is no user_id-message_id combination")

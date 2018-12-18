@@ -48,9 +48,9 @@ def cmd_help(message):
 
 @bot.message_handler(func=lambda message: dm.get_current_state(message.chat.id) == dm.States.S_SEARCH.value)
 def user_entering_description(message):
-    # Если не удалось найти фильм (или другое условие, по которому мы просим уточнить описание)
     logger.debug("user_entering_description, message: " + message.text)
-    if time.clock() % 2 == 0:
+    if int(time.time()) % 2 == 0:
+        # Если не удалось найти фильм (или другое условие, по которому мы просим уточнить описание)
         bot.send_message(message.chat.id, "Please be more spectific with the description")
         dm.set_state(message.chat.id, dm.States.S_CLARIFY.value)
     else:
@@ -60,7 +60,7 @@ def user_entering_description(message):
 @bot.message_handler(func= lambda message: dm.get_current_state(message.chat.id) == dm.States.S_CLARIFY.value)
 def user_clarifying(message):
     logger.debug("user_clarifying, message: " + message.txt)
-    if time.clock() % 2 == 0:
+    if int(time.time()) % 2 == 0:
         # если не получили уточнения, не меняем состояние
         bot.send_message(message.chat.id, "Please be more spectific with the description")
     else:
