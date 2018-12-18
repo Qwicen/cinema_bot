@@ -5,7 +5,7 @@ import telebot
 import pandas as pd
 
 import config
-import chatbot.DialogueManagement
+import chatbot.DialogueManagement as dm
 from chatbot.NaturalLanguageUnderstanding import MoviePlot
 
 logger = telebot.logger
@@ -40,24 +40,24 @@ def set_webhook():
 def cmd_start(message):
     bot.send_message(message.chat.id, "Hello, " + message.from_user.first_name)
     bot.send_message(message.chat.id, "Please desctribe the movie you would like me to find")
-    set_state(message.chat.id, States.S_SEARCH.value)
+    dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
 
 @bot.message_handler(commands=['help'])
 def cmd_help(message):
     bot.send_message(message, "TODO")
 
-@bot.message_handler(func=lambda message: get_current_state(message.chat.id) == States.S_SEARCH.value)
+@bot.message_handler(func=lambda message: dm.get_current_state(message.chat.id) == dm.States.S_SEARCH.value)
 def user_entering_description(message):
     # Если не удалось найти фильм (или другое условие, по которому мы просим уточнить описание)
     if time.clock() % 2 == 0:
         bot.send_message(message.chat.id, "Please be more spectific with the description")
-        set_state(message.chat.id, States.S_CLARIFY.value)
+        dm.set_state(message.chat.id, dm.States.S_CLARIFY.value)
         return
     else:
         # Если получили положительный результат, состояние не меняем
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
 
-@bot.message_handler(func= lambda message: get_current_state(message.chat.id) == States.S_CLARIFY.value)
+@bot.message_handler(func= lambda message: dm.get_current_state(message.chat.id) == dm.States.S_CLARIFY.value)
 def user_clarifying(message):
     if time.clock() % 2 == 0:
         # если не получили уточнения, не меняем состояние
@@ -66,7 +66,7 @@ def user_clarifying(message):
     else:
         # Если получили положительный результат
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
-        set_state(message.chat.id, States.S_SEARCH.value)
+        dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
 
 if __name__ == "__main__":
     app.run()
