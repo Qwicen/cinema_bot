@@ -5,8 +5,8 @@ import telebot
 import pandas as pd
 
 import config
+import chatbot.DialogueManagement
 from chatbot.NaturalLanguageUnderstanding import MoviePlot
-from chatbot.DialogueManagement import States
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.DEBUG)
@@ -40,40 +40,33 @@ def set_webhook():
 def cmd_start(message):
     bot.send_message(message.chat.id, "Hello, " + message.from_user.first_name)
     bot.send_message(message.chat.id, "Please desctribe the movie you would like me to find")
-    States.set_state(message.chat.id, States.S_SEARCH.value)
+    set_state(message.chat.id, States.S_SEARCH.value)
 
 @bot.message_handler(commands=['help'])
 def cmd_help(message):
     bot.send_message(message, "TODO")
 
-# По команде /reset будем сбрасывать состояния, возвращаясь к началу диалога
-@bot.message_handler(commands=["reset"])
-def cmd_reset(message):
-    bot.send_message(message.chat.id, "Starting over. Please write the movie desctiption")
-    States.set_state(message.chat.id, States.S_ENTER_NAME.value)
-
-@bot.message_handler(func=lambda message: States.get_current_state(message.chat.id) == States.S_SEARCH.value)
-def user_entering_descкiption(message):
+@bot.message_handler(func=lambda message: get_current_state(message.chat.id) == States.S_SEARCH.value)
+def user_entering_description(message):
     # Если не удалось найти фильм (или другое условие, по которому мы просим уточнить описание)
-    if """ Nothing was found """:
-        # Состояние не меняем, просим уточнить
+    if time.clock() % 2 == 0:
+        bot.send_message(message.chat.id, "Please be more spectific with the description")
+        set_state(message.chat.id, States.S_CLARIFY.value)
+        return
+    else:
+        # Если получили положительный результат, состояние не меняем
+        bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
+
+@bot.message_handler(func= lambda message: get_current_state(message.chat.id) == States.S_CLARIFY.value)
+def user_clarifying(message):
+    if time.clock() % 2 == 0:
+        # если не получили уточнения, не меняем состояние
         bot.send_message(message.chat.id, "Please be more spectific with the description")
         return
     else:
         # Если получили положительный результат
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
-        States.set_state(message.chat.id, States.S_RESULT.value)
-
-@bot.message_handler(func= lambda message: States.get_current_state(message.chat.id) == States.S_RESULT.value)
-def user_sending_photo(message):
-    # Здесь выводим результат
-    bot.send_message(message.chat.id, "Here you go! **RESULT** If you want to try some other description, just type in /start")
-    States.set_state(message.chat.id, States.S_START.value)
-
-@bot.message_handler(func=lambda message: True, content_types=['text'])
-def echo_message(message):
-    df = MoviePlot.plot2movie(message.text)
-    bot.send_message(message.chat.id, df['Title'][0])
+        set_state(message.chat.id, States.S_SEARCH.value)
 
 if __name__ == "__main__":
     app.run()
