@@ -13,9 +13,9 @@ class States(Enum):
 def get_current_state(user_id):
     with Vedis(States.db_state) as db:
         try:
-            return db[user_id]
+            return db[user_id].decode()
         except KeyError:
-            print("KeyError. There is not user ", user_id, ", returning S_START")
+            print("KeyError. There is no user ", user_id, ", returning S_START")
             return States.S_START.value
 # Сохраняем текущее «состояние» пользователя в нашу базу
 def set_state(user_id, value):
@@ -24,7 +24,7 @@ def set_state(user_id, value):
             db[user_id] = value
             return True
         except KeyError:
-            print("KeyError. There is not user ", user_id, ", doing nothing")
+            print("KeyError. There is no user ", user_id, ", doing nothing")
             return False
 # Записываем запрос по пользователю
 def set_user_descr(user_id, description):
@@ -33,13 +33,13 @@ def set_user_descr(user_id, description):
             db[user_id] = description
             return True
         except KeyError:
-            print("KeyError. There is not user ", user_id, ", doing nothing")
+            print("KeyError. There is no user ", user_id, ", doing nothing")
 def get_user_descr(user_id, description):
     with Vedis(States.db_search) as db:
         try:
-            return db[user_id]
+            return db[user_id].decode()
         except KeyError:
-            print("KeyError. There is not user ", user_id, ", doing nothing")
+            print("KeyError. There is no user ", user_id, ", doing nothing")
 # Записываем фильм, который вернулся по запросу
 def set_descr_movie(description, movie):
     with Vedis(States.db_search) as db:
@@ -47,16 +47,11 @@ def set_descr_movie(description, movie):
             db[description] = movie
             return True
         except KeyError:
-            print("KeyError. There is not description ", description, ", doing nothing")
+            print("KeyError. There is no description ", description, ", doing nothing")
             return False
 def get_descr_movie(description, movie):
     with Vedis(States.db_search) as db:
         try:
-            return db[description]
+            return db[description].decode()
         except KeyError:
-            print("KeyError. There is not description ", description, ", doing nothing")
-
-if __name__ == "__main__":
-    print(get_current_state(0))
-    set_state(0, States.S_SEARCH.value)
-    print(get_current_state(0))
+            print("KeyError. There is no description ", description, ", doing nothing")
