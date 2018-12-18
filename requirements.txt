@@ -3,3 +3,4 @@ uwsgi
 flask
 pathlib
 gensim
+vedis
