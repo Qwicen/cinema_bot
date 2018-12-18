@@ -7,9 +7,9 @@ class States(Enum):
     S_SEARCH = "1"
     S_CLARIFY = "2"
 
-    db_state = "db_state.vdb"
-    db_search = "db_search.vdb"
-    db_page = "db_page.vdb"
+    db_state = "data/db_state.vdb"
+    db_search = "data/db_search.vdb"
+    db_page = "data/db_page.vdb"
 
 # Пытаемся узнать из базы «состояние» пользователя
 def get_current_state(user_id):
