@@ -107,7 +107,8 @@ def callback_query(call):
     dm.save_page(call.message.chat.id, call.message.message_id, current_page)
     films = json.loads(dm.get_request(call.message.chat.id, call.message.message_id))
     response = generateMarkdownMessage(films['results'][current_page], page=current_page)
-    bot.edit_message_text(response, call.message.chat.id, call.message.message_id)
+    bot.edit_message_text(response, call.message.chat.id, call.message.message_id,
+                disable_notification=True, reply_markup=markup, parse_mode='Markdown'))
 
 if __name__ == "__main__":
     app.run()
