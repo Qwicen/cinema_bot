@@ -98,9 +98,9 @@ def callback_query(call):
 
     dm.save_page(call.message.chat.id, call.message.message_id, current_page)
     films = json.loads(dm.get_request(call.message.chat.id, call.message.message_id))
-    response = generateMarkdownMessage(films['results'][current_page], page=current_page)
+    response = generateMarkdownMessage(films['results'][current_page - 1], page=current_page)
     bot.edit_message_text(response, call.message.chat.id, call.message.message_id,
-                disable_notification=True, reply_markup=get_markup(), parse_mode='Markdown')
+                          reply_markup=get_markup(), parse_mode='Markdown')
 
 def get_markup():
     markup = telebot.types.InlineKeyboardMarkup()
