@@ -1,3 +1,4 @@
+import requests
 from vedis import Vedis
 from enum import Enum
 
@@ -8,6 +9,7 @@ class States(Enum):
 
     db_state = "db_state.vdb"
     db_search = "db_search.vdb"
+    db_page = "db_page.vdb"
 
 # Пытаемся узнать из базы «состояние» пользователя
 def get_current_state(user_id):
@@ -26,7 +28,7 @@ def set_state(user_id, value):
         except KeyError:
             print("KeyError. There is no user ", user_id, ", doing nothing")
             return False
-# Записываем запрос по пользователю
+# Записываем результат пользовательского запроса
 def save_request(user_id, message_id, films):
     with Vedis(States.db_search) as db:
         try:
@@ -35,6 +37,7 @@ def save_request(user_id, message_id, films):
             return True
         except KeyError:
             print("KeyError. There is no user_id-message_id combination")
+# Получаем результат пользовательского запроса
 def get_request(user_id, message_id):
     with Vedis(States.db_search) as db:
         try:
@@ -42,3 +45,32 @@ def get_request(user_id, message_id):
             return db[key].decode()
         except KeyError:
             print("KeyError. There is no user_id-message_id combination")
+
+def save_page(user_id, message_id, page):
+    with Vedis(States.db_page) as db:
+        try:
+            key = str(user_id) + str(message_id)
+            db[key] = page
+            return True
+        except KeyError:
+            print("KeyError. There is no user_id-message_id combination")
+
+def get_page(user_id, message_id):
+    with Vedis(States.db_page) as db:
+        try:
+            key = str(user_id) + str(message_id)
+            return db[key].decode()
+        except KeyError:
+            print("KeyError. There is no user_id-message_id combination")
+
+def api_discover(api_key, n_matches=5, genres=None, people=None, actors=None, crew=None, year=None):
+    url = "https://api.themoviedb.org/3/discover/movie"
+    payload = { 'api_key': api_key,
+                'with_genres': genres,
+                'with_people': people,
+                'with_cast': actors,
+                'with_crew': crew,
+                'year': year,
+                'sort_by': 'vote_average.desc'}
+    response = requests.request('GET', url, data=payload)
+    return response.json()['results'][:n_matches]
