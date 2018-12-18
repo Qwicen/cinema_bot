@@ -59,7 +59,7 @@ def user_entering_description(message):
 
 @bot.message_handler(func= lambda message: dm.get_current_state(message.chat.id) == dm.States.S_CLARIFY.value)
 def user_clarifying(message):
-    logger.debug("user_clarifying, message: " + message.txt)
+    logger.debug("user_clarifying, message: " + message.text)
     if int(time.time()) % 2 == 0:
         # если не получили уточнения, не меняем состояние
         bot.send_message(message.chat.id, "Please be more spectific with the description")
