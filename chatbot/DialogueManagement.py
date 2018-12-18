@@ -50,10 +50,11 @@ def save_page(user_id, message_id, page):
     with Vedis(States.db_page) as db:
         try:
             key = str(user_id) + str(message_id)
-            db[key] = page
+            db[key] = str(page)
+            print("Saved page with key: " + key)
             return True
         except KeyError:
-            print("KeyError. There is no user_id-message_id combination")
+            print("KeyError in save_page. There is no user_id-message_id combination: " + key)
 
 def get_page(user_id, message_id):
     with Vedis(States.db_page) as db:
@@ -61,7 +62,7 @@ def get_page(user_id, message_id):
             key = str(user_id) + str(message_id)
             return int(db[key].decode())
         except KeyError:
-            print("KeyError. There is no user_id-message_id combination")
+            print("KeyError in get_page. There is no user_id-message_id combination: " + key)
 
 def api_discover(api_key, genres=None, people=None, actors=None, crew=None, year=None):
     url = "https://api.themoviedb.org/3/discover/movie"
