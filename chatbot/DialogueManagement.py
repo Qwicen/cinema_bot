@@ -59,7 +59,7 @@ def get_page(user_id, message_id):
     with Vedis(States.db_page) as db:
         try:
             key = str(user_id) + str(message_id)
-            return db[key].decode()
+            return int(db[key].decode())
         except KeyError:
             print("KeyError. There is no user_id-message_id combination")
 

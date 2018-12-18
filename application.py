@@ -1,5 +1,6 @@
 import logging
 import time
+import json
 import flask
 import telebot
 import pandas as pd
@@ -56,8 +57,7 @@ def user_entering_description(message):
         markup.add(telebot.types.InlineKeyboardButton("Back", callback_data=f"back"),
                    telebot.types.InlineKeyboardButton("Next", callback_data=f"next"))
         films = dm.get_request(message.chat.id, message.message_id)
-        print(type(films))
-        print(films)
+        json.loads(films)
         response = "KEK"
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
         bot.send_message(message.chat.id, response, 
@@ -77,9 +77,8 @@ def user_clarifying(message):
         markup.add(telebot.types.InlineKeyboardButton("Back", callback_data=f"back"),
                    telebot.types.InlineKeyboardButton("Next", callback_data=f"next"))
         films = dm.get_request(message.chat.id, message.message_id)
-        print(type(films))
-        print(films)
-        response = "KEK"
+        films = json.loads(films)
+        response = generateMarkdownMessage(films[0], page=1)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
         bot.send_message(message.chat.id, response, 
                     disable_notification=True, reply_markup=markup, parse_mode='Markdown')
@@ -103,13 +102,13 @@ def callback_query(call):
         if current_page != 1:
             current_page -= 1
     elif call.data == "next":
-        current_page += 1
+        if current_page != 3:
+            current_page += 1
 
     dm.save_page(call.message.chat.id, call.message.message_id, current_page)
     films = dm.get_request(call.message.chat.id, call.message.message_id)
-    print(type(films))
-    print(films)
-    response = "KEK"#generateMarkdownMessage(States.response[call.message.message_id][States.current_page - 1], States.current_page)
+    films = json.loads(films)
+    response = generateMarkdownMessage(films[current_page], page=current_page)
     bot.edit_message_text(response, call.message.chat.id, call.message.message_id)
 
 if __name__ == "__main__":
