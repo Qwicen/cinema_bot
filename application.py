@@ -52,15 +52,11 @@ def cmd_help(message):
 def user_entering_description(message):
     logger.debug("user_entering_description, message: " + message.text)
     if pipeline(message):
-        markup = telebot.types.InlineKeyboardMarkup()
-        markup.row_width = 2
-        markup.add(telebot.types.InlineKeyboardButton("Back", callback_data=f"back"),
-                   telebot.types.InlineKeyboardButton("Next", callback_data=f"next"))
         films = json.loads(dm.get_request(message.chat.id, message.message_id + 2))
         response = generateMarkdownMessage(films['results'][0], page=1)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
         bot.send_message(message.chat.id, response, 
-                    disable_notification=True, reply_markup=markup, parse_mode='Markdown')
+                    disable_notification=True, reply_markup=get_markup(), parse_mode='Markdown')
     else:
         # Если не удалось найти фильм (или другое условие, по которому мы просим уточнить описание)
         bot.send_message(message.chat.id, "Please be more spectific with the description")
@@ -71,15 +67,11 @@ def user_clarifying(message):
     logger.debug("user_clarifying, message: " + message.text)
     if pipeline(message):
         # Если получили положительный результат
-        markup = telebot.types.InlineKeyboardMarkup()
-        markup.row_width = 2
-        markup.add(telebot.types.InlineKeyboardButton("Back", callback_data=f"back"),
-                   telebot.types.InlineKeyboardButton("Next", callback_data=f"next"))
         films = json.loads(dm.get_request(message.chat.id, message.message_id + 2))
         response = generateMarkdownMessage(films['results'][0], page=1)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
         bot.send_message(message.chat.id, response, 
-                    disable_notification=True, reply_markup=markup, parse_mode='Markdown')
+                    disable_notification=True, reply_markup=get_markup(), parse_mode='Markdown')
         dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
     else:
         # Если не получили уточнения, не меняем состояние
@@ -108,7 +100,14 @@ def callback_query(call):
     films = json.loads(dm.get_request(call.message.chat.id, call.message.message_id))
     response = generateMarkdownMessage(films['results'][current_page], page=current_page)
     bot.edit_message_text(response, call.message.chat.id, call.message.message_id,
-                disable_notification=True, reply_markup=markup, parse_mode='Markdown'))
+                disable_notification=True, reply_markup=get_markup(), parse_mode='Markdown')
+
+def get_markup():
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.row_width = 2
+    markup.add(telebot.types.InlineKeyboardButton("Back", callback_data=f"back"),
+               telebot.types.InlineKeyboardButton("Next", callback_data=f"next"))
+    return markup
 
 if __name__ == "__main__":
     app.run()
