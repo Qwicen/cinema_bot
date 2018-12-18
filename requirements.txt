@@ -1,3 +1,5 @@
+deeppavlov
 uwsgi 
 flask
-pyTelegramBotAPI
+pathlib
+gensim
