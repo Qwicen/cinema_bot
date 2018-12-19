@@ -1,5 +1,6 @@
 from deeppavlov import configs, build_model
 from deeppavlov import train_model
+from deeppavlov.models.slotfill.slotfill import DstcSlotFillingNetwork
 import pandas as pd
 from gensim.models import Doc2Vec
 import pickle
@@ -67,8 +68,7 @@ class MoviePlot:
         movies = self.model.docvecs.most_similar([pred], topn = n_matches)
         
         return self._to_df(movies)   
-   
-      
+
 class NER:
     config = "./models/ner_config.json"
     ner_model = build_model(config, download=True)
@@ -79,4 +79,11 @@ class NER:
 
     def NamedEntityRecognition(message):
         ner = NER.ner_model([message])
-        return ner[0][0], ner[1][0]
+        sentence, labels = ner[0][0], ner[1][0]
+        entities, slots = DstcSlotFillingNetwork._chunk_finder(sentence, labels)
+        s = {}
+        for i, slot in enumerate(slots):
+            if slot not in s:
+                s[slot] = []
+            s[slot].append(entities[i])
+        return s 

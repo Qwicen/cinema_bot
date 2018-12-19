@@ -8,8 +8,8 @@ import pandas as pd
 import config
 import chatbot.DialogueManagement as dm
 import chatbot.NaturalLanguageGeneration as nlg
-#from chatbot.NaturalLanguageUnderstanding import MoviePlot
-#from chatbot.NaturalLanguageUnderstanding import NER
+from chatbot.NaturalLanguageUnderstanding import MoviePlot
+from chatbot.NaturalLanguageUnderstanding import NER
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.DEBUG)
@@ -83,6 +83,7 @@ def user_clarifying(message):
         bot.send_message(message.chat.id, "Please be more spectific with the description")
 
 def pipeline(message):
+    slots = NER.NamedEntityRecognition(message.text)
     # Все нашли
     films = dm.api_discover(config.DB_API_TOKEN, genres=[28], actors=[117642])
     # Target message will be shifted by two : user_msg, found_msg, target_msg

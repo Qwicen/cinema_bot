@@ -3,7 +3,6 @@ import pickle
 import numpy as np
 from vedis import Vedis
 from enum import Enum
-from deeppavlov.models.slotfill.slotfill import DstcSlotFillingNetwork
 from deeppavlov.models.slotfill.slotfill_raw import SlotFillingComponent
 
 class States(Enum):
