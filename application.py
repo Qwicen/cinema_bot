@@ -71,6 +71,8 @@ def user_entering_description(message):
 def user_clarifying(message):
     logger.debug("user_clarifying, message: " + message.text)
     decision = pipeline(message, clarifying=True)
+    logger.debug("decision on message: " + message.text)
+    print(decision)
     if decision == dm.States.R_OK:
         films = json.loads(dm.get_request(message.chat.id, message.message_id + 2))
         response = nlg.generateMarkdownMessage(films['results'][0], page=1)
@@ -87,6 +89,7 @@ def user_clarifying(message):
 
 def pipeline(message, clarifying=False):
     slots = NER.NamedEntityRecognition(message.text)
+    print("###SLOTS_BEFORE_UNITING###", slots)
     if clarifying:
         s = dm.get_current_slots(message.chat.id)
         for slot in s:
