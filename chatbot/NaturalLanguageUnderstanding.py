@@ -86,7 +86,7 @@ class NER:
         s = {}
         for i, slot in enumerate(slots):
             if slot not in s:
-                s[slot] = ()
+                s[slot] = set()
             s[slot].add(entities[i])
         return s 
 
