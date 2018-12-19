@@ -89,12 +89,13 @@ def pipeline(message):
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     current_page = dm.get_page(call.message.chat.id, call.message.message_id)
+    new_page = current_page
     if call.data == "back":
         if current_page != 1:
-            new_page = current_page - 1
+            new_page -= 1
     elif call.data == "next":
         if current_page != 3:
-            new_page = current_page + 1
+            new_page += 1
 
     if current_page != new_page:
         dm.save_page(call.message.chat.id, call.message.message_id, new_page)
