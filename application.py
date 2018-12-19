@@ -53,6 +53,7 @@ def cmd_help(message):
 def user_entering_description(message):
     logger.debug("user_entering_description, message: " + message.text)
     decision = pipeline(message, clarifying=False)
+    logger.debug("decision on message: " + message.text)
     if decision == dm.States.R_OK:
         films = json.loads(dm.get_request(message.chat.id, message.message_id + 2))
         response = nlg.generateMarkdownMessage(films['results'][0], page=1)
