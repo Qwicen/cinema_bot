@@ -8,8 +8,8 @@ import pandas as pd
 import config
 import chatbot.DialogueManagement as dm
 import chatbot.NaturalLanguageGeneration as nlg
-from chatbot.NaturalLanguageUnderstanding import MoviePlot
-from chatbot.NaturalLanguageUnderstanding import NER
+#from chatbot.NaturalLanguageUnderstanding import MoviePlot
+#from chatbot.NaturalLanguageUnderstanding import NER
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.DEBUG)
