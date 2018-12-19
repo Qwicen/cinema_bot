@@ -1,4 +1,5 @@
 import requests
+import pickle
 from vedis import Vedis
 from enum import Enum
 
@@ -10,6 +11,10 @@ class States(Enum):
     db_state = "data/db_state.vdb"
     db_search = "data/db_search.vdb"
     db_page = "data/db_page.vdb"
+
+    R_OK = 0
+    R_CLARIFY_GENRE = 1
+    R_CLARIFY_ALL = 2
 
 # Пытаемся узнать из базы «состояние» пользователя
 def get_current_state(user_id):
@@ -64,6 +69,16 @@ def get_page(user_id, message_id):
         except KeyError:
             print("KeyError in get_page. There is no user_id-message_id combination: " + key)
 
+class ApiDicts:
+    with open('data/api_dicts/genre_to_id.pickle', 'rb') as f:
+        genre_to_id = pickle.load(f)
+
+    with open('data/api_dicts/movie_to_id.pickle', 'rb') as f:
+        movie_to_id = pickle.load(f)
+
+    with open('data/api_dicts/person_to_id.pickle', 'rb') as f:
+        movie_to_id = pickle.load(f)
+    
 def api_discover(api_key, genres=None, people=None, actors=None, crew=None, year=None):
     url = "https://api.themoviedb.org/3/discover/movie"
     payload = { 'api_key': api_key,
