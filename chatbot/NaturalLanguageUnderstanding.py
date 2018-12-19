@@ -1,60 +1,49 @@
 from deeppavlov import configs, build_model
 from deeppavlov import train_model
 import pandas as pd
-import numpy as np
-import nltk
-from nltk.corpus import stopwords
 from gensim.models import Doc2Vec
 import pickle
+
 
 class MoviePlot:
     
     root_path = "models/plot2movie/"
     
-    # keep movies's plots
-    df = pd.read_csv('data/wiki_movie_plots_deduped.csv')
-    df['Title'] = df['Title'] + ' - ' + df['Release Year'].astype(str) + ' - ' + df['Director']
-    df = df[['Title', 'Plot']]
+    model = Doc2Vec.load(root_path + 'doc2vec_tags_50')
+    df = pd.read_csv('data/df_tags.csv')
+        
+    with open(root_path + 'set_of_tags.pkl', 'rb') as fin:
+        tags = pickle.load(fin)
     
-    # load models
-    model_long = Doc2Vec.load(root_path + 'doc2vec_movie_long')
-    model_short = Doc2Vec.load(root_path + 'doc2vec_movie_short')
     
-    @staticmethod
-    def _tokenize_text_long(text):
-        """ Tokenizing text to list of words
+    def _tokenizer(self, text):
+        """ Leave only words key words in description which among set_of_tags
         """
         
         tokens = []
-        for sent in nltk.sent_tokenize(text, language='english'):
-            for word in nltk.word_tokenize(sent, language='english'):
-                if len(word) <= 2:
-                    continue
-                if word in stopwords.words('english'):
-                    continue
-                tokens.append(word)
+        
+        for w in text.split():
+            if w in self.tags:
+                tokens.append(w)
+                
         return tokens
     
-    @staticmethod
-    def _tokenize_text_short(text):
-        """ Tokenizing text to list of words for modified plot
+    
+    def _to_df(self, movies):
+        """ Convert list of movies' titles to pf.DataFrame
         """
         
-        with open(MoviePlot.root_path + 'dict_not_used_words.pkl', 'rb') as fin:
-            dict_ = pickle.load(fin)
-            
-        tokens = []
-        for sent in nltk.sent_tokenize(text, language='english'):
-            for word in nltk.word_tokenize(sent, language='english'):
-                if len(word) <= 2:
-                    continue
-                if word in stopwords.words('english') or word in dict_:
-                    continue
-                tokens.append(word)
-        return tokens
+        titles = [t for t, _ in movies]
+    
+        data = pd.DataFrame()
+        for title in titles:
+            data = pd.concat([data, self.df[self.df['title'] == title]])
+        
+        print(data.columns.tolist())
+        return data[['title', 'imdbId', 'tmdbId']]
     
     
-    def plot2movie(text, n_matches=10, long=True):
+    def plot2movie(self, text, n_matches=10):
         """ Find movies based on doc2vec model which are close
         (using cosine similarity) to the given discription.
         
@@ -65,44 +54,20 @@ class MoviePlot:
         n_matches : int
             The quantity of matched movies which we want to review for given
             plot descripiton.
-        long : bool
-            Specify which model to apply, if:
-            True - model trained on all words from data, neither words of plots
-                nor movies were removed for trained data.
-            False - model have been trained on modified data; words which were met
-                rarelier than 3 times in all plots were removed, movies which have
-                plots discription less than 500 symbols have been removed.
                 
         Returns
         -------
         df : pd.DataFrame
-            DataFrame of movies with shape (n_matches, [Title, Year, Director, Plot])
+            DataFrame of movies with shape (n_matches, [title, imdbId, tmdbId])
         """
-        print(long)
-        if long:
-            text_tok = MoviePlot._tokenize_text_long(text)
-            pred = MoviePlot.model_long.infer_vector(text_tok)
-            movies = MoviePlot.model_long.docvecs.most_similar([pred], topn = n_matches)
-    
-        else:
-            text_tok = MoviePlot._tokenize_text_short(text)
-            pred = MoviePlot.model_short.infer_vector(text_tok)
-            movies = MoviePlot.model_short.docvecs.most_similar([pred], topn = n_matches)
-                    
-        titles = [t for t, _ in movies]
         
-        plots = []
-        for title in titles:
-            plots.append(MoviePlot.df['Plot'][MoviePlot.df.Title == title].values[0])
+        text_tok = self._tokenizer(text)
         
-        plots = np.array(plots)[:,None]
+        pred = self.model.infer_vector(text_tok)
+        movies = self.model.docvecs.most_similar([pred], topn = n_matches)
         
-        
-        sim_doc = [doc.split(' - ') for doc, _ in movies]
-        sim_doc = np.hstack((sim_doc, plots))
-        data = pd.DataFrame(sim_doc, columns=['Title', 'Year', 'Director', 'Plot'])
-            
-        return data
+        return self._to_df(movies)   
+   
       
 class NER:
     config = "./models/ner_config.json"
