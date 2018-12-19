@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/yurakuratov/data/DeepPavlov/download/ner_ontonotes/model"
+all_model_checkpoint_paths: "/home/yurakuratov/data/DeepPavlov/download/ner_ontonotes/model"

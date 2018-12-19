@@ -78,7 +78,7 @@ class NER:
         NER.ner_model = build_model(NER.config, download=True)
 
     def NamedEntityRecognition(message):
-        print("Entering NER")
+        print("Entering NER: " + message)
         ner = NER.ner_model([message])
         sentence, labels = ner[0][0], ner[1][0]
         print("NER labels: ", labels)
