@@ -70,14 +70,10 @@ def get_page(user_id, message_id):
             print("KeyError in get_page. There is no user_id-message_id combination: " + key)
 
 class ApiDicts:
-    with open('data/api_dicts/genre_to_id.pickle', 'rb') as f:
-        genre_to_id = pickle.load(f)
 
-    with open('data/api_dicts/movie_to_id.pickle', 'rb') as f:
-        movie_to_id = pickle.load(f)
-
-    with open('data/api_dicts/person_to_id.pickle', 'rb') as f:
-        movie_to_id = pickle.load(f)
+    genre_to_id = pickle.load(open('data/api_dicts/genre_to_id.pickle', 'rb'))
+    movie_to_id = pickle.load(open('data/api_dicts/movie_to_id.pickle', 'rb'))
+    person_to_id = pickle.load(open('data/api_dicts/person_to_id.pickle', 'rb'))
     
 def api_discover(api_key, genres=None, people=None, actors=None, crew=None, year=None):
     url = "https://api.themoviedb.org/3/discover/movie"
