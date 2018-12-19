@@ -91,16 +91,17 @@ def callback_query(call):
     current_page = dm.get_page(call.message.chat.id, call.message.message_id)
     if call.data == "back":
         if current_page != 1:
-            current_page -= 1
+            new_page = current_page - 1
     elif call.data == "next":
         if current_page != 3:
-            current_page += 1
+            new_page = current_page + 1
 
-    dm.save_page(call.message.chat.id, call.message.message_id, current_page)
-    films = json.loads(dm.get_request(call.message.chat.id, call.message.message_id))
-    response = generateMarkdownMessage(films['results'][current_page - 1], page=current_page)
-    bot.edit_message_text(response, call.message.chat.id, call.message.message_id,
-                          reply_markup=get_markup(), parse_mode='Markdown')
+    if current_page != new_page:
+        dm.save_page(call.message.chat.id, call.message.message_id, new_page)
+        films = json.loads(dm.get_request(call.message.chat.id, call.message.message_id))
+        response = generateMarkdownMessage(films['results'][new_page - 1], page=new_page)
+        bot.edit_message_text(response, call.message.chat.id, call.message.message_id,
+                              reply_markup=get_markup(), parse_mode='Markdown')
 
 def get_markup():
     markup = telebot.types.InlineKeyboardMarkup()
