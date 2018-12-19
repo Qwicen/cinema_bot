@@ -54,7 +54,6 @@ def user_entering_description(message):
     logger.debug("user_entering_description, message: " + message.text)
     decision = pipeline(message)
     if decision == dm.States.R_OK:
-        print(dm.ApiDicts.genre_to_id)
         films = json.loads(dm.get_request(message.chat.id, message.message_id + 2))
         response = nlg.generateMarkdownMessage(films['results'][0], page=1)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")

@@ -1,7 +1,10 @@
 import requests
 import pickle
+import numpy as np
 from vedis import Vedis
 from enum import Enum
+from deeppavlov.models.slotfill.slotfill import DstcSlotFillingNetwork
+from deeppavlov.models.slotfill.slotfill_raw import SlotFillingComponent
 
 class States(Enum):
     S_START = "0"
@@ -74,7 +77,7 @@ class ApiDicts:
     genre_to_id = pickle.load(open('data/api_dicts/genre_to_id.pickle', 'rb'))
     movie_to_id = pickle.load(open('data/api_dicts/movie_to_id.pickle', 'rb'))
     person_to_id = pickle.load(open('data/api_dicts/person_to_id.pickle', 'rb'))
-    
+
 def api_discover(api_key, genres=None, people=None, actors=None, crew=None, year=None):
     url = "https://api.themoviedb.org/3/discover/movie"
     payload = { 'api_key': api_key,
@@ -86,3 +89,8 @@ def api_discover(api_key, genres=None, people=None, actors=None, crew=None, year
                 'sort_by': 'vote_average.desc'}
     response = requests.request('GET', url, data=payload)
     return response.text
+
+def find_levenshtein_closest(candidate, real):
+    d = [SlotFillingComponent.fuzzy_substring_distance(candidate, x) for x in real]
+    d = np.array(d)
+    return real[np.argmin(d[:,0])]
