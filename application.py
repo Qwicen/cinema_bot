@@ -92,7 +92,7 @@ def pipeline(message, clarifying=False):
         for slot in s:
             if slot in slots:
                 slots[slot] = set.union(slots[slot], s[slot])
-
+    print("###SLOTS###", slots)
     if len(slots) == 0:
         return dm.States.R_CLARIFY_ALL
     if len(slots) == 1:
