@@ -18,6 +18,7 @@ class States(Enum):
     R_OK = 0
     R_CLARIFY_GENRE = 1
     R_CLARIFY_ALL = 2
+    R_DONE = 3
 
 # Пытаемся узнать из базы «состояние» пользователя
 def get_current_state(user_id):

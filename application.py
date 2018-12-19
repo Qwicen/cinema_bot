@@ -67,6 +67,8 @@ def user_entering_description(message):
         bot.send_message(message.chat.id, "Sorry, I don’t understand")
         bot.send_message(message.chat.id, "Please be more spectific with the description")
         dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
+    elif decision == dm.States.R_DONE:
+        dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
 
 @bot.message_handler(func= lambda message: dm.get_current_state(message.chat.id) == dm.States.S_CLARIFY.value)
 def user_clarifying(message):
@@ -87,6 +89,8 @@ def user_clarifying(message):
         bot.send_message(message.chat.id, "Sorry, I don’t understand")
         bot.send_message(message.chat.id, "Please be more spectific with the description")
         dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
+    elif decision == dm.States.R_DONE:
+        dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
 
 def pipeline(message, clarifying=False):
     slots = NER.NamedEntityRecognition(message.text)
@@ -104,27 +108,29 @@ def pipeline(message, clarifying=False):
             dm.set_slots(message.chat.id, slots)
             return dm.States.R_CLARIFY_GENRE
 
-
-    if 'GENRE' in slots:
-        genres_id = [dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys())) for genre in slots['GENRE']]
-        genres_id = [dm.ApiDicts.genre_to_id[genre] for genre in genres_id]
-
-    if 'ACTOR' in slots:
-        actors_id = [dm.find_levenshtein_closest(actor, list(dm.ApiDicts.person_to_id.keys())) for actor in slots['ACTOR']]
-        actors_id = [dm.ApiDicts.person_to_id[actor] for actor in actors_id]
-
     # Все нашли
     if 'PLOT' in slots:
         plot = slots['PLOT']
-        df = MoviePlot.plot2movie(plot, n_matches=10)
-        print("!!!!!!!!!!!!", df['TITLE'][0])
-
+        df = MoviePlot.plot2movie(plot, n_matches=5)
+        bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
+        for i in range(5):
+            bot.send_message(message.chat.id, df['Title'][i])
+        return dm.States.R_DONE
+        
     else:
+        if 'GENRE' in slots:
+            genres_id = [dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys())) for genre in slots['GENRE']]
+            genres_id = [dm.ApiDicts.genre_to_id[genre] for genre in genres_id]
+
+        if 'ACTOR' in slots:
+            actors_id = [dm.find_levenshtein_closest(actor, list(dm.ApiDicts.person_to_id.keys())) for actor in slots['ACTOR']]
+            actors_id = [dm.ApiDicts.person_to_id[actor] for actor in actors_id]
+
         films = dm.api_discover(config.DB_API_TOKEN, genres=genres_id, actors=actors_id)
         # Target message will be shifted by two : user_msg, found_msg, target_msg
         dm.save_request(message.chat.id, message.message_id + 2, films)
         dm.save_page(message.chat.id, message.message_id + 2, page=1)
-    return dm.States.R_OK
+        return dm.States.R_OK
     
 
 @bot.callback_query_handler(func=lambda call: True)

@@ -89,3 +89,7 @@ class NER:
                 s[slot] = ()
             s[slot].add(entities[i])
         return s 
+
+if __name__ == "__main__":
+    message = "I want a film with Jason Momoa"
+    print(NER.NamedEntityRecognition(message))
