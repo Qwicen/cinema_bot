@@ -16,21 +16,21 @@ class MoviePlot:
     with open(root_path + 'set_of_tags.pkl', 'rb') as fin:
         tags = pickle.load(fin)
     
-    
-    def _tokenizer(self, text):
+    @staticmethod
+    def _tokenizer(text):
         """ Leave only words key words in description which among set_of_tags
         """
         
         tokens = []
         
         for w in text.split():
-            if w in self.tags:
+            if w in MoviePlot.tags:
                 tokens.append(w)
                 
         return tokens
     
-    
-    def _to_df(self, movies):
+    @staticmethod
+    def _to_df(movies):
         """ Convert list of movies' titles to pf.DataFrame
         """
         
@@ -38,13 +38,13 @@ class MoviePlot:
     
         data = pd.DataFrame()
         for title in titles:
-            data = pd.concat([data, self.df[self.df['title'] == title]])
+            data = pd.concat([data, MoviePlot.df[MoviePlot.df['title'] == title]])
         
         print(data.columns.tolist())
         return data[['title', 'imdbId', 'tmdbId']]
     
-    
-    def plot2movie(self, text, n_matches=10):
+    @staticmethod
+    def plot2movie(text, n_matches=10):
         """ Find movies based on doc2vec model which are close
         (using cosine similarity) to the given discription.
         
@@ -62,12 +62,12 @@ class MoviePlot:
             DataFrame of movies with shape (n_matches, [title, imdbId, tmdbId])
         """
         
-        text_tok = self._tokenizer(text)
+        text_tok = MoviePlot._tokenizer(text)
         
-        pred = self.model.infer_vector(text_tok)
-        movies = self.model.docvecs.most_similar([pred], topn = n_matches)
+        pred = MoviePlot.model.infer_vector(text_tok)
+        movies = MoviePlot.model.docvecs.most_similar([pred], topn = n_matches)
         
-        return self._to_df(movies)   
+        return MoviePlot._to_df(movies)   
 
 class NER:
     config = "./models/ner_config.json"
@@ -84,6 +84,6 @@ class NER:
         s = {}
         for i, slot in enumerate(slots):
             if slot not in s:
-                s[slot] = []
-            s[slot].append(entities[i])
+                s[slot] = ()
+            s[slot].add(entities[i])
         return s 

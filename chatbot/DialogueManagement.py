@@ -13,6 +13,7 @@ class States(Enum):
     db_state = "data/db_state.vdb"
     db_search = "data/db_search.vdb"
     db_page = "data/db_page.vdb"
+    db_slots = "data/db_slots.vdb"
 
     R_OK = 0
     R_CLARIFY_GENRE = 1
@@ -29,6 +30,22 @@ def get_current_state(user_id):
 # Сохраняем текущее «состояние» пользователя в нашу базу
 def set_state(user_id, value):
     with Vedis(States.db_state) as db:
+        try:
+            db[user_id] = value
+            return True
+        except KeyError:
+            print("KeyError. There is no user ", user_id, ", doing nothing")
+            return False
+
+def get_current_slots(user_id):
+    with Vedis(States.db_slots) as db:
+        try:
+            return db[user_id].decode()
+        except KeyError:
+            print("KeyError. There is no user ", user_id, ", return no slots")
+
+def set_slots(user_id, value):
+    with Vedis(States.db_slots) as db:
         try:
             db[user_id] = value
             return True
