@@ -1,7 +1,7 @@
+import os
 import logging
 import time
 import json
-import flask
 import telebot
 import pandas as pd
 
@@ -12,144 +12,105 @@ from chatbot.NaturalLanguageUnderstanding import MoviePlot
 from chatbot.NaturalLanguageUnderstanding import NER
 
 logger = telebot.logger
-telebot.logger.setLevel(logging.DEBUG)
-bot = telebot.TeleBot(config.TG_API_TOKEN, threaded=False)
-app = flask.Flask(__name__)
-
-@app.route('/', methods=['GET', 'HEAD'])
-def index():
-    return ''
-
-@app.route(config.WEBHOOK_URL_PATH, methods=['POST'])
-def webhook():
-    if flask.request.headers.get('content-type') == 'application/json':
-        json_string = flask.request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return ''
-    else:
-        flask.abort(403)
-
-@app.route('/set_webhook', methods=['GET', 'POST'])
-def set_webhook():
-    bot.remove_webhook()
-    time.sleep(0.1)
-    bot.set_webhook(url=config.WEBHOOK_URL_BASE + config.WEBHOOK_URL_PATH,
-                    certificate=open(config.WEBHOOK_SSL_CERT, 'r'))
-    return ''
+telebot.logger.setLevel(logging.ERROR)
+bot = telebot.TeleBot(config.TG_API_TOKEN)
 
 # Начало диалога
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
     bot.send_message(message.chat.id, "Hello, " + message.from_user.first_name)
     bot.send_message(message.chat.id, "Please describe the movie you would like me to find")
-    dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
 
 @bot.message_handler(commands=['help'])
 def cmd_help(message):
     bot.send_message(message, "TODO")
 
-@bot.message_handler(func=lambda message: dm.get_current_state(message.chat.id) == dm.States.S_SEARCH.value)
+@bot.message_handler(func=lambda message: True)
 def user_entering_description(message):
-    logger.debug("user_entering_description, message: " + message.text)
-    decision = pipeline(message, clarifying=False)
-    logger.debug("decision on message: " + message.text)
-    if decision == dm.States.R_OK:
+    decision = pipeline(message)
+    print("decision on message: " + message.text, decision)
+    if decision == dm.States.R_OK.value:
+        Slots[message.chat.id] = None
         films = json.loads(dm.get_request(message.chat.id, message.message_id + 2))
         response = nlg.generateMarkdownMessage(films['results'][0], page=1)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
         bot.send_message(message.chat.id, response, 
                     disable_notification=True, reply_markup=get_markup(), parse_mode='Markdown')
-    elif decision == dm.States.R_CLARIFY_GENRE:
-        nlg.specifyGenre()
-        dm.set_state(message.chat.id, dm.States.S_CLARIFY.value)
-    elif decision == dm.States.R_CLARIFY_ALL:
+    elif decision == dm.States.R_CLARIFY_GENRE.value:
+        bot.send_message(message.chat.id, nlg.specifyGenre())
+    elif decision == dm.States.R_CLARIFY_ALL.value:
         bot.send_message(message.chat.id, "Sorry, I don’t understand")
         bot.send_message(message.chat.id, "Please be more spectific with the description")
-        dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
-    elif decision == dm.States.R_DONE:
-        dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
+    elif decision == dm.States.R_DONE.value:
+        pass
+    elif decision == dm.States.R_NONE.value:
+        bot.send_message(message.chat.id, "I can not find anything for you.")
 
-@bot.message_handler(func= lambda message: dm.get_current_state(message.chat.id) == dm.States.S_CLARIFY.value)
-def user_clarifying(message):
-    logger.debug("user_clarifying, message: " + message.text)
-    decision = pipeline(message, clarifying=True)
-    logger.debug("decision on message: " + message.text)
-    print(decision)
-    if decision == dm.States.R_OK:
-        films = json.loads(dm.get_request(message.chat.id, message.message_id + 2))
-        response = nlg.generateMarkdownMessage(films['results'][0], page=1)
-        bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
-        bot.send_message(message.chat.id, response, 
-                    disable_notification=True, reply_markup=get_markup(), parse_mode='Markdown')
-    elif decision == dm.States.R_CLARIFY_GENRE:
-        nlg.specifyGenre()
-        dm.set_state(message.chat.id, dm.States.S_CLARIFY.value)
-    elif decision == dm.States.R_CLARIFY_ALL:
-        bot.send_message(message.chat.id, "Sorry, I don’t understand")
-        bot.send_message(message.chat.id, "Please be more spectific with the description")
-        dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
-    elif decision == dm.States.R_DONE:
-        dm.set_state(message.chat.id, dm.States.S_SEARCH.value)
-
-def pipeline(message, clarifying=False):
+def pipeline(message):
     slots = NER.NamedEntityRecognition(message.text)
-    print("###SLOTS_BEFORE_UNITING###", slots)
-    if clarifying:
-        s = dm.get_current_slots(message.chat.id)
-        for slot in s:
-            if slot in slots:
-                slots[slot] = set.union(slots[slot], s[slot])
-    print("###SLOTS###", slots)
-    if len(slots) == 0:
-        return dm.States.R_CLARIFY_ALL
-    if len(slots) == 1:
-        if 'ACTOR' in slots:
-            dm.set_slots(message.chat.id, slots)
-            return dm.States.R_CLARIFY_GENRE
+    if message.chat.id in Slots:
+        for slot in slots:
+            if slot in Slots[message.chat.id]:
+                Slots[message.chat.id][slot] = set.union(slots[slot], Slots[message.chat.id][slot])
+            else:
+                Slots[message.chat.id][slot] = slots[slot]
+    else:
+        Slots[message.chat.id] = slots
+    print("###SLOTS###", Slots)
+    if len(Slots[message.chat.id]) == 0:
+        return dm.States.R_CLARIFY_ALL.value
+    if len(Slots[message.chat.id]) == 1:
+        if 'ACTOR' in Slots[message.chat.id]:
+            return dm.States.R_CLARIFY_GENRE.value
 
     # Все нашли
-    if 'PLOT' in slots:
-        plot = slots['PLOT']
+    if 'PLOT' in Slots[message.chat.id]:
+        plot = " ".join(Slots[message.chat.id]['PLOT'])
         df = MoviePlot.plot2movie(plot, n_matches=5)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
         for i in range(5):
-            bot.send_message(message.chat.id, df['Title'][i])
-        return dm.States.R_DONE
+            bot.send_message(message.chat.id, df['title'].iloc[i])
+        return dm.States.R_DONE.value
         
     else:
-        if 'GENRE' in slots:
-            genres_id = [dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys())) for genre in slots['GENRE']]
+        if 'GENRE' in Slots[message.chat.id]:
+            genres_id = [dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys())) for genre in Slots[message.chat.id]['GENRE']]
             genres_id = [dm.ApiDicts.genre_to_id[genre] for genre in genres_id]
 
-        if 'ACTOR' in slots:
-            actors_id = [dm.find_levenshtein_closest(actor, list(dm.ApiDicts.person_to_id.keys())) for actor in slots['ACTOR']]
-            actors_id = [dm.ApiDicts.person_to_id[actor] for actor in actors_id]
+        if 'ACTOR' in Slots[message.chat.id]:
+            #actors_id = [dm.find_levenshtein_closest(actor, list(dm.ApiDicts.person_to_id.keys())) for actor in Slots[message.chat.id]['ACTOR']]
+            #actors_id = [dm.ApiDicts.person_to_id[actor] for actor in actors_id]
+            actors_id = [dm.ApiDicts.person_to_id[actor] for actor in Slots[message.chat.id]['ACTOR']]
 
+        print("Call API with genres=", genres_id, " and actors=", actors_id)
         films = dm.api_discover(config.DB_API_TOKEN, genres=genres_id, actors=actors_id)
-        # Target message will be shifted by two : user_msg, found_msg, target_msg
-        dm.save_request(message.chat.id, message.message_id + 2, films)
-        dm.save_page(message.chat.id, message.message_id + 2, page=1)
-        return dm.States.R_OK
+        if films["total_results"] == 0:
+            return dm.States.R_NONE.value
+        else:
+            dm.save_request(message.chat.id, message.message_id + 2, films)
+            dm.save_page(message.chat.id, message.message_id + 2, page=1)
+            return dm.States.R_OK.value
     
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     current_page = dm.get_page(call.message.chat.id, call.message.message_id)
+    films = json.loads(dm.get_request(call.message.chat.id, call.message.message_id))
+    max_page = 5 if films["total_results"] > 5 else films["total_results"]
     new_page = current_page
     if call.data == "back":
         if current_page != 1:
-            new_page -= 1
+            response = nlg.generateMarkdownMessage(films['results'][current_page - 2], page=current_page - 1)
+            edit_message(response, call.message.chat.id, call.message.message_id, current_page - 1)
     elif call.data == "next":
-        if current_page != 3:
-            new_page += 1
-
-    if current_page != new_page:
-        dm.save_page(call.message.chat.id, call.message.message_id, new_page)
-        films = json.loads(dm.get_request(call.message.chat.id, call.message.message_id))
-        response = nlg.generateMarkdownMessage(films['results'][new_page - 1], page=new_page)
-        bot.edit_message_text(response, call.message.chat.id, call.message.message_id,
-                              reply_markup=get_markup(), parse_mode='Markdown')
+        if current_page != max_page:
+            response = nlg.generateMarkdownMessage(films['results'][current_page], page=current_page + 1)
+            edit_message(response, call.message.chat.id, call.message.message_id, current_page + 1)
+    bot.answer_callback_query(callback_query_id=call.id)
+        
+def edit_message(response, chat, message, page):
+    dm.save_page(chat, message, page)
+    bot.edit_message_text(response, chat, message, reply_markup=get_markup(), parse_mode='Markdown')
 
 def get_markup():
     markup = telebot.types.InlineKeyboardMarkup()
@@ -158,5 +119,7 @@ def get_markup():
                telebot.types.InlineKeyboardButton("Next", callback_data=f"next"))
     return markup
 
+
 if __name__ == "__main__":
-    app.run()
+    Slots = {}
+    bot.polling(none_stop=True)

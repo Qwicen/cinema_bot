@@ -4,3 +4,4 @@ flask
 pathlib
 gensim
 vedis
+python-Levenshtein

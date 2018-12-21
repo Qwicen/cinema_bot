@@ -78,10 +78,10 @@ class NER:
         NER.ner_model = build_model(NER.config, download=True)
 
     def NamedEntityRecognition(message):
-        print("Entering NER: " + message)
         ner = NER.ner_model([message])
         sentence, labels = ner[0][0], ner[1][0]
-        print("NER labels: ", labels)
+        print("###NER: ", sentence)
+        print("###NER: ", labels)
         entities, slots = DstcSlotFillingNetwork._chunk_finder(sentence, labels)
         s = {}
         for i, slot in enumerate(slots):
@@ -89,7 +89,3 @@ class NER:
                 s[slot] = set()
             s[slot].add(entities[i])
         return s 
-
-if __name__ == "__main__":
-    message = "I want a film with Jason Momoa"
-    print(NER.NamedEntityRecognition(message))
