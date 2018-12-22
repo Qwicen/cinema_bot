@@ -47,6 +47,7 @@ def user_entering_description(message):
     elif decision == dm.States.R_DONE.value:
         pass
     elif decision == dm.States.R_NONE.value:
+        Slots[message.chat.id] = {}
         bot.send_message(message.chat.id, "I can not find anything for you.")
 
 def pipeline(message):
@@ -82,7 +83,7 @@ def pipeline(message):
             for genre in Slots[message.chat.id]['GENRE']:
                 closest = dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys()))
                 if closest == False:
-                    keywords_id = dm.api_search_keyword(config.DB_API_TOKEN, closest)
+                    keywords_id = dm.api_search_keyword(config.DB_API_TOKEN, genre)
                     if 'KEYWORDS' in Slots[message.chat.id]:
                         Slots[message.chat.id]['KEYWORDS'] = set.union(keywords_id, Slots[message.chat.id]['KEYWORDS'])
                     else:
