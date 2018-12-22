@@ -51,6 +51,7 @@ def user_entering_description(message):
         bot.send_message(message.chat.id, "I can not find anything for you.")
 
 def pipeline(message):
+    # NER
     slots = NER.NamedEntityRecognition(message.text)
     if message.chat.id in Slots:
         for slot in slots:
@@ -61,13 +62,13 @@ def pipeline(message):
     else:
         Slots[message.chat.id] = slots
     print("###SLOTS###", Slots)
+    # Clarifyings
     if len(Slots[message.chat.id]) == 0:
         return dm.States.R_CLARIFY_ALL.value
     if len(Slots[message.chat.id]) == 1:
         if 'ACTOR' in Slots[message.chat.id]:
             return dm.States.R_CLARIFY_GENRE.value
-
-    # Все нашли
+    # Processing
     if 'PLOT' in Slots[message.chat.id]:
         plot = " ".join(Slots[message.chat.id]['PLOT'])
         df = MoviePlot.plot2movie(plot, n_matches=5)
@@ -75,43 +76,57 @@ def pipeline(message):
         dm.save_request(message.chat.id, message.message_id + 2, films)
         dm.save_page(message.chat.id, message.message_id + 2, page=1)
         return dm.States.R_OK.value
-        
+
     else:
         actors_id = []
         genres_id = []
+        director_id = []
+        keywords_id = []
         if 'GENRE' in Slots[message.chat.id]:
             for genre in Slots[message.chat.id]['GENRE']:
                 closest = dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys()))
                 if closest == False:
-                    keywords_id = dm.api_search_keyword(config.DB_API_TOKEN, genre)
+                    keywords = dm.api_search_keyword(config.DB_API_TOKEN, genre)
                     if 'KEYWORDS' in Slots[message.chat.id]:
-                        Slots[message.chat.id]['KEYWORDS'] = set.union(keywords_id, Slots[message.chat.id]['KEYWORDS'])
+                        Slots[message.chat.id]['KEYWORDS'] = set.union(keywords, Slots[message.chat.id]['KEYWORDS'])
                     else:
-                        Slots[message.chat.id]['KEYWORDS'] = keywords_id
+                        Slots[message.chat.id]['KEYWORDS'] = keywords
+                    keywords_id = Slots[message.chat.id]['KEYWORDS']
                 else:
                     genres_id.append(dm.ApiDicts.genre_to_id[closest])
+            if len(genres_id) == 0:
+                return dm.States.R_CLARIFY_GENRE.value
         if 'ACTOR' in Slots[message.chat.id]:
             for actor in Slots[message.chat.id]['ACTOR'].copy():
                 if actor in dm.ApiDicts.person_to_id:
-                    actors_id.append(dm.ApiDicts.person_to_id[actor])
+                    actors_id.append(dm.ApiDicts.person_to_id[actor][0])
                 else:
                     bot.send_message(message.chat.id, "I don’t know who is " + actor + ". Please, check spelling.")
                     Slots[message.chat.id]['ACTOR'].remove(actor)
             if len(actors_id) == 0:        
                 return dm.States.R_CLARIFY_ACTOR.value
-            elif len(genres_id) == 0:
-                return dm.States.R_CLARIFY_GENRE.value
 
-        print("Call API with genres=", genres_id, " and actors=", actors_id)
-        films = dm.api_discover(config.DB_API_TOKEN, genres=genres_id, actors=actors_id, keywords=Slots[message.chat.id]['KEYWORDS'])
-        if json.loads(films)["total_results"] == 0:
-            return dm.States.R_NONE.value
+        if 'DIRECTOR' in Slots[message.chat.id]:
+            for director in Slots[message.chat.id]['DIRECTOR'].copy():
+                if director in dm.ApiDicts.person_to_id:
+                    director_id.append(dm.ApiDicts.person_to_id[director][0])
+                else:
+                    bot.send_message(message.chat.id, "I don’t know who is " + director + ". Please, check spelling.")
+                    Slots[message.chat.id]['DIRECTOR'].remove(director)
+
+        if len(genres_id + actors_id + director_id + keywords_id) != 0:
+            print("Call API with genres=", genres_id, " and actors=", actors_id, " and directors=", director_id)
+            films = dm.api_discover(config.DB_API_TOKEN, genres=genres_id, actors=actors_id, crew=director_id, keywords=keywords_id)
+            if json.loads(films)["total_results"] == 0:
+                return dm.States.R_NONE.value
+            else:
+                dm.save_request(message.chat.id, message.message_id + 2, films)
+                dm.save_page(message.chat.id, message.message_id + 2, page=1)
+                return dm.States.R_OK.value
         else:
-            dm.save_request(message.chat.id, message.message_id + 2, films)
-            dm.save_page(message.chat.id, message.message_id + 2, page=1)
-            return dm.States.R_OK.value
-    
+            return dm.States.R_NONE.value
 
+    
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     current_page = dm.get_page(call.message.chat.id, call.message.message_id)

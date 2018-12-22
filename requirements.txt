@@ -1,6 +1,4 @@
 deeppavlov
-uwsgi 
-flask
 pathlib
 gensim
 vedis
