@@ -16,9 +16,10 @@ class States(Enum):
 
     R_OK = 0
     R_CLARIFY_GENRE = 1
-    R_CLARIFY_ALL = 2
-    R_DONE = 3
-    R_NONE = 4
+    R_CLARIFY_ACTOR = 2
+    R_CLARIFY_ALL = 3
+    R_DONE = 4
+    R_NONE = 5
 
 # Пытаемся узнать из базы «состояние» пользователя
 def get_current_state(user_id):
@@ -80,16 +81,12 @@ class ApiDicts:
     movie_to_id = pickle.load(open('data/api_dicts/movie_to_id.pickle', 'rb'))
     person_to_id = pickle.load(open('data/api_dicts/person_to_id.pickle', 'rb'))
 
-def api_discover(api_key, genres=None, people=None, actors=None, crew=None, year=None):
+def api_discover(api_key, genres=[], people=[], actors=[], crew=[], year=None, keywords=[]):
     url = "https://api.themoviedb.org/3/discover/movie"
-    payload = { 'api_key': api_key,
-                'with_genres': genres,
-                'with_people': people,
-                'with_cast': actors,
-                'with_crew': crew,
-                'year': year,
-                'sort_by': 'vote_average.desc'}
-    response = requests.request('GET', url, data=payload)
+    query = "?api_key={}&with_genres={}&with_people={}&with_cast={}&with_crew={}&year={}&keywords={}sort_by=vote_average.desc".format(
+        api_key, ",".join(map(str, genres)), ",".join(map(str, people)), ",".join(map(str, actors)), ",".join(map(str, crew)), year, ",".join(map(str, keywords))
+    )
+    response = requests.request('GET', url + query)
     return response.text
 
 def api_movie(api_key, movie_ids):
@@ -101,8 +98,25 @@ def api_movie(api_key, movie_ids):
         response = requests.request('GET', url, data=payload)
         descriptions.append(response.text)
     return "{ \"results\": [ " + ", ".join(descriptions) + " ], \"total_results\": 5}"
+
+def api_search_keyword(api_key, keyword):
+    url = "https://api.themoviedb.org/3/search/keyword"
+    query = "?api_key={}&query={}".format(api_key, keyword)
+    response = requests.request('GET', url + query)
+    if response.json()['total_results'] == 0:
+        return None
+    else:
+        result = set()
+        for keyword in response.json()['results']:
+            result.add(keyword['id'])
+        return result
     
 def find_levenshtein_closest(candidate, real):
     d = [SlotFillingComponent.fuzzy_substring_distance(candidate, x) for x in real]
     d = np.array(d)
-    return real[np.argmin(d[:,0])]
+    if np.min(d[:,0]) >= 4:
+        return False
+    else:
+        closest = real[np.argmin(d[:,0])]
+        print("Closest genre to ", candidate, " is ", closest, ". dist = ", np.min(d[:,0]))
+        return closest

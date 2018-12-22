@@ -18,6 +18,7 @@ bot = telebot.TeleBot(config.TG_API_TOKEN)
 # Начало диалога
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
+    Slots[message.chat.id] = {}
     bot.send_message(message.chat.id, "Hello, " + message.from_user.first_name)
     bot.send_message(message.chat.id, "Please describe the movie you would like me to find")
 
@@ -30,7 +31,7 @@ def user_entering_description(message):
     decision = pipeline(message)
     print("decision on message: " + message.text, decision)
     if decision == dm.States.R_OK.value:
-        Slots[message.chat.id] = None
+        Slots[message.chat.id] = {}
         films = json.loads(dm.get_request(message.chat.id, message.message_id + 2))
         response = nlg.generateMarkdownMessage(films['results'][0], page=1)
         bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
@@ -38,6 +39,8 @@ def user_entering_description(message):
                     disable_notification=True, reply_markup=get_markup(), parse_mode='Markdown')
     elif decision == dm.States.R_CLARIFY_GENRE.value:
         bot.send_message(message.chat.id, nlg.specifyGenre())
+    elif decision == dm.States.R_CLARIFY_ACTOR.value:
+        bot.send_message(message.chat.id, nlg.specifyActor())
     elif decision == dm.States.R_CLARIFY_ALL.value:
         bot.send_message(message.chat.id, "Sorry, I don’t understand")
         bot.send_message(message.chat.id, "Please be more spectific with the description")
@@ -73,18 +76,34 @@ def pipeline(message):
         return dm.States.R_OK.value
         
     else:
+        actors_id = []
+        genres_id = []
         if 'GENRE' in Slots[message.chat.id]:
-            genres_id = [dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys())) for genre in Slots[message.chat.id]['GENRE']]
-            genres_id = [dm.ApiDicts.genre_to_id[genre] for genre in genres_id]
-
+            for genre in Slots[message.chat.id]['GENRE']:
+                closest = dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys()))
+                if closest == False:
+                    keywords_id = dm.api_search_keyword(config.DB_API_TOKEN, closest)
+                    if 'KEYWORDS' in Slots[message.chat.id]:
+                        Slots[message.chat.id]['KEYWORDS'] = set.union(keywords_id, Slots[message.chat.id]['KEYWORDS'])
+                    else:
+                        Slots[message.chat.id]['KEYWORDS'] = keywords_id
+                else:
+                    genres_id.append(dm.ApiDicts.genre_to_id[closest])
         if 'ACTOR' in Slots[message.chat.id]:
-            #actors_id = [dm.find_levenshtein_closest(actor, list(dm.ApiDicts.person_to_id.keys())) for actor in Slots[message.chat.id]['ACTOR']]
-            #actors_id = [dm.ApiDicts.person_to_id[actor] for actor in actors_id]
-            actors_id = [dm.ApiDicts.person_to_id[actor] for actor in Slots[message.chat.id]['ACTOR']]
+            for actor in Slots[message.chat.id]['ACTOR'].copy():
+                if actor in dm.ApiDicts.person_to_id:
+                    actors_id.append(dm.ApiDicts.person_to_id[actor])
+                else:
+                    bot.send_message(message.chat.id, "I don’t know who is " + actor + ". Please, check spelling.")
+                    Slots[message.chat.id]['ACTOR'].remove(actor)
+            if len(actors_id) == 0:        
+                return dm.States.R_CLARIFY_ACTOR.value
+            elif len(genres_id) == 0:
+                return dm.States.R_CLARIFY_GENRE.value
 
         print("Call API with genres=", genres_id, " and actors=", actors_id)
-        films = dm.api_discover(config.DB_API_TOKEN, genres=genres_id, actors=actors_id)
-        if films["total_results"] == 0:
+        films = dm.api_discover(config.DB_API_TOKEN, genres=genres_id, actors=actors_id, keywords=Slots[message.chat.id]['KEYWORDS'])
+        if json.loads(films)["total_results"] == 0:
             return dm.States.R_NONE.value
         else:
             dm.save_request(message.chat.id, message.message_id + 2, films)

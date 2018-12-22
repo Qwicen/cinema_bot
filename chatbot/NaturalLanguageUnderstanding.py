@@ -1,8 +1,9 @@
 from deeppavlov import configs, build_model
 from deeppavlov import train_model
 from deeppavlov.models.slotfill.slotfill import DstcSlotFillingNetwork
-import pandas as pd
+from nltk.corpus import stopwords
 from gensim.models import Doc2Vec
+import pandas as pd
 import pickle
 
 
@@ -88,4 +89,7 @@ class NER:
             if slot not in s:
                 s[slot] = set()
             s[slot].add(entities[i])
+        if 'GENRE' in s:
+            for genre in s['GENRE']:
+                s['GENRE'] = set.union(set(word for word in genre.split() if word not in (stopwords.words('english'))), s['GENRE'])
         return s 
