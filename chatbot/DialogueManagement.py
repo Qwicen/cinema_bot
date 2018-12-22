@@ -92,6 +92,16 @@ def api_discover(api_key, genres=None, people=None, actors=None, crew=None, year
     response = requests.request('GET', url, data=payload)
     return response.text
 
+def api_movie(api_key, movie_ids):
+    base_url = "https://api.themoviedb.org/3/movie/"
+    payload = { 'api_key': api_key }
+    descriptions = []
+    for idx in movie_ids:
+        url = base_url + str(idx)
+        response = requests.request('GET', url, data=payload)
+        descriptions.append(response.text)
+    return "{ \"results\": [ " + ", ".join(descriptions) + " ], \"total_results\": 5}"
+    
 def find_levenshtein_closest(candidate, real):
     d = [SlotFillingComponent.fuzzy_substring_distance(candidate, x) for x in real]
     d = np.array(d)

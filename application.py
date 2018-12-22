@@ -67,10 +67,10 @@ def pipeline(message):
     if 'PLOT' in Slots[message.chat.id]:
         plot = " ".join(Slots[message.chat.id]['PLOT'])
         df = MoviePlot.plot2movie(plot, n_matches=5)
-        bot.send_message(message.chat.id, "I found something for you, hope you'll like it")
-        for i in range(5):
-            bot.send_message(message.chat.id, df['title'].iloc[i])
-        return dm.States.R_DONE.value
+        films = dm.api_movie(config.DB_API_TOKEN, df['tmdbId'].iloc[:5].values)
+        dm.save_request(message.chat.id, message.message_id + 2, films)
+        dm.save_page(message.chat.id, message.message_id + 2, page=1)
+        return dm.States.R_OK.value
         
     else:
         if 'GENRE' in Slots[message.chat.id]:
