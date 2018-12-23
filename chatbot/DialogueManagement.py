@@ -98,8 +98,9 @@ def api_movie(api_key, movie_ids):
     for idx in movie_ids:
         url = base_url + str(idx)
         response = requests.request('GET', url, data=payload)
-        descriptions.append(response.text)
-    return "{ \"results\": [ " + ", ".join(descriptions) + " ], \"total_results\": {}}}".format(movie_ids.shape[0])
+        if 'title' in response.json():
+            descriptions.append(response.text)
+    return "{ \"results\": [ " + ", ".join(descriptions) + " ], \"total_results\": {}}}".format(len(descriptions))
 
 def api_search_keyword(api_key, keyword):
     url = "https://api.themoviedb.org/3/search/keyword"
@@ -109,9 +110,13 @@ def api_search_keyword(api_key, keyword):
         return None
     else:
         result = set()
-        for keyword in response.json()['results']:
-            result.add(keyword['id'])
-        return result
+        for key in response.json()['results']:
+            if keyword.lower() in key['name'].split():
+                result.add(key['id'])
+        if len(result) != 0:
+            return result
+        else:
+            return None
     
 def find_levenshtein_closest(candidate, real):
     d = [SlotFillingComponent.fuzzy_substring_distance(candidate, x) for x in real]
