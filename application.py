@@ -2,13 +2,14 @@ import logging
 import time
 import flask
 import telebot
+import pandas as pd
 
 from config import API_TOKEN
 from config import WEBHOOK_SSL_CERT
 from config import WEBHOOK_URL_BASE
 from config import WEBHOOK_URL_PATH
 
-from chatbot import NaturalLanguageUnderstanding as NLU
+from chatbot.NaturalLanguageUnderstanding import MoviePlot
 
 logger = telebot.logger
 telebot.logger.setLevel(logging.DEBUG)
@@ -43,8 +44,8 @@ def send_welcome(message):
 
 @bot.message_handler(func=lambda message: True, content_types=['text'])
 def echo_message(message):
-    msg_split, ner = NLU.NamedEntityRecognition(message.text)
-    bot.send_message(message.chat.id, msg_split[0])
+    df = MoviePlot.plot2movie(message.text)
+    bot.send_message(message.chat.id, df['Title'][0])
 
 if __name__ == "__main__":
     app.run()
