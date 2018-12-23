@@ -8,11 +8,9 @@ import pandas as pd
 import config
 import chatbot.DialogueManagement as dm
 import chatbot.NaturalLanguageGeneration as nlg
-from chatbot.NaturalLanguageUnderstanding import MoviePlot
-from chatbot.NaturalLanguageUnderstanding import NER
-
+import chatbot.NaturalLanguageUnderstanding as nlu
 logger = telebot.logger
-telebot.logger.setLevel(logging.ERROR)
+telebot.logger.setLevel(logging.DEBUG)
 bot = telebot.TeleBot(config.TG_API_TOKEN)
 
 # Начало диалога
@@ -28,6 +26,7 @@ def cmd_help(message):
 
 @bot.message_handler(func=lambda message: True)
 def user_entering_description(message):
+    logger.debug("Got new message from " + message.chat.first_name + message.chat.last_name + message.chat.username, " : ", message.text)
     decision = pipeline(message)
     print("decision on message: " + message.text, decision)
     if decision == dm.States.R_OK.value:
@@ -52,7 +51,7 @@ def user_entering_description(message):
 
 def pipeline(message):
     # NER
-    slots = NER.NamedEntityRecognition(message.text)
+    slots = nlu.NER.NamedEntityRecognition(message.text)
     if message.chat.id in Slots:
         for slot in slots:
             if slot in Slots[message.chat.id]:
@@ -71,17 +70,14 @@ def pipeline(message):
     # Processing
     if 'PLOT' in Slots[message.chat.id]:
         plot = " ".join(Slots[message.chat.id]['PLOT'])
-        df = MoviePlot.plot2movie(plot, n_matches=5)
+        df = nlu.MoviePlot.plot2movie(plot, n_matches=5)
         films = dm.api_movie(config.DB_API_TOKEN, df['tmdbId'].iloc[:5].values)
         dm.save_request(message.chat.id, message.message_id + 2, films)
         dm.save_page(message.chat.id, message.message_id + 2, page=1)
         return dm.States.R_OK.value
 
     else:
-        actors_id = []
-        genres_id = []
-        director_id = []
-        keywords_id = []
+        actors_id = []; genres_id = []; director_id = []; keywords_id = []; year=None
         if 'GENRE' in Slots[message.chat.id]:
             for genre in Slots[message.chat.id]['GENRE']:
                 closest = dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys()))
@@ -114,9 +110,12 @@ def pipeline(message):
                     bot.send_message(message.chat.id, "I don’t know who is " + director + ". Please, check spelling.")
                     Slots[message.chat.id]['DIRECTOR'].remove(director)
 
+        if 'YEAR' in Slots[message.chat.id]:
+            year = nlu.extractYear(Slots[message.chat.id]['YEAR'])
+
         if len(genres_id + actors_id + director_id + keywords_id) != 0:
             print("Call API with genres=", genres_id, " and actors=", actors_id, " and directors=", director_id)
-            films = dm.api_discover(config.DB_API_TOKEN, genres=genres_id, actors=actors_id, crew=director_id, keywords=keywords_id)
+            films = dm.api_discover(config.DB_API_TOKEN, genres=genres_id, actors=actors_id, crew=director_id, keywords=keywords_id, year=year)
             if json.loads(films)["total_results"] == 0:
                 return dm.States.R_NONE.value
             else:

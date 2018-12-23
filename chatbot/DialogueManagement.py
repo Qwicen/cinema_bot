@@ -83,9 +83,10 @@ class ApiDicts:
 
 def api_discover(api_key, genres=[], people=[], actors=[], crew=[], year=None, keywords=[]):
     url = "https://api.themoviedb.org/3/discover/movie"
-    query = "?api_key={}&with_genres={}&with_people={}&with_cast={}&with_crew={}&year={}&sort_by=vote_average.desc".format(
+    query = "?api_key={}&with_genres={}&with_people={}&with_cast={}&with_crew={}&primary_release_year={}&sort_by=vote_average.desc".format(
         api_key, ",".join(map(str, genres)), ",".join(map(str, people)), ",".join(map(str, actors)), ",".join(map(str, crew)), year
     )
+    print(query)
     payload = { 'with_keywords': keywords }
     response = requests.request('GET', url + query, data=payload)
     return response.text

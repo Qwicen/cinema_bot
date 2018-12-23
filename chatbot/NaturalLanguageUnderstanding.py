@@ -93,3 +93,6 @@ class NER:
             for genre in s['GENRE']:
                 s['GENRE'] = set.union(set(word for word in genre.split() if word not in (stopwords.words('english'))), s['GENRE'])
         return s 
+
+def extractYear(message):
+    return "2007"
