@@ -1,7 +1,7 @@
 from deeppavlov import configs, build_model
 from deeppavlov import train_model
 import pandas as pd
-from gensim.models import Doc2Vec
+import difflib
 import pickle
 
 
@@ -9,43 +9,53 @@ class MoviePlot:
     
     root_path = "models/plot2movie/"
     
-    model = Doc2Vec.load(root_path + 'doc2vec_tags_50')
-    df = pd.read_csv('data/df_tags.csv')
-        
-    with open(root_path + 'set_of_tags.pkl', 'rb') as fin:
-        tags = pickle.load(fin)
+    scores = pd.read_csv(root_path + 'weights/df_scores.csv')
+    tmdb = pd.read_csv(root_path + 'movieID.csv')
+    
+    with open(root_path + 'dict_tags.pkl', 'rb') as fin:
+            dict_tags = pickle.load(fin)
     
     
-    def _tokenizer(self, text):
-        """ Leave only words key words in description which among set_of_tags
+    def _text_to_tags(self, text):
+        """ Tranform text to tags. We choose closest tags from the list of
+        all tags (if such tags exit).
         """
         
-        tokens = []
+        all_tags = set()
         
-        for w in text.split():
-            if w in self.tags:
-                tokens.append(w)
-                
-        return tokens
+        text = text.split()
+        for word in text:
+            match = difflib.get_close_matches(word, self.dict_tags, cutoff=0.8)
+            all_tags.update(match)
+            
+        bigramms = [' '.join(x) for x in zip(text[:-1], text[1:])]
+        for bigramm in bigramms:
+            match = difflib.get_close_matches(bigramm, self.dict_tags, cutoff=0.8)
+            all_tags.update(match)
+        
+        return list(all_tags)
+
     
     
     def _to_df(self, movies):
         """ Convert list of movies' titles to pf.DataFrame
         """
         
-        titles = [t for t, _ in movies]
+        titles = [t for t in movies]
     
         data = pd.DataFrame()
         for title in titles:
-            data = pd.concat([data, self.df[self.df['title'] == title]])
-        
-        print(data.columns.tolist())
-        return data[['title', 'imdbId', 'tmdbId']]
+            data = pd.concat([data, self.tmdb[self.tmdb['title'] == title]])
+
+        try:
+            return data[['title', 'imdbId', 'tmdbId']]
+        except:
+            return data
     
     
     def plot2movie(self, text, n_matches=10):
-        """ Find movies based on doc2vec model which are close
-        (using cosine similarity) to the given discription.
+        """ Find movies based on matched tags with highest total score.
+
         
         Parameters
         ----------
@@ -60,13 +70,16 @@ class MoviePlot:
         df : pd.DataFrame
             DataFrame of movies with shape (n_matches, [title, imdbId, tmdbId])
         """
+
+        tags = self._text_to_tags(text)
         
-        text_tok = self._tokenizer(text)
+        data = self.scores[self.scores.tagId.isin(tags)].groupby('movieId').sum()
+        data = data[data.relevance > len(tags)*0.5].nlargest(n_matches, 'relevance')
         
-        pred = self.model.infer_vector(text_tok)
-        movies = self.model.docvecs.most_similar([pred], topn = n_matches)
+        df = self._to_df(data.index)
         
-        return self._to_df(movies)   
+        return df
+
    
       
 class NER:
