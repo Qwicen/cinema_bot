@@ -106,14 +106,14 @@ class NER:
 
 def extract_year(text):
     match = re.search(r'\d{4}', text)
-    if match == None and re.search(r'\d{2}', text) != None:
+    if match == None and re.search(r'\d{2}', text) != None and re.search(r'\d{3}', text) == None:
       match = re.search(r'\d{2}', text)
-      return '19'+match.group()
+      return '19'+str(match.group())
     if match == None:
       this_year = datetime.datetime.now().year
       word_dict = {'last': this_year-1, 'this': this_year, 'new': this_year+1}
       for word in word_dict.keys():
         if re.search(word, text) != None:
-          return word_dict[word]
+          return str(word_dict[word])
       return None
-    return match.group()
+    return str(match.group())
