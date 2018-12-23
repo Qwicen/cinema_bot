@@ -47,7 +47,10 @@ class MoviePlot:
         for title in titles:
             data = pd.concat([data, self.tmdb[self.tmdb['title'] == title]])
 
-        return data[['title', 'imdbId', 'tmdbId']]
+        try:
+            return data[['title', 'imdbId', 'tmdbId']]
+        except:
+            return data
     
     
     def plot2movie(self, text, n_matches=10):
@@ -71,7 +74,7 @@ class MoviePlot:
         tags = self._text_to_tags(text)
         
         data = self.scores[self.scores.tagId.isin(tags)].groupby('movieId').sum()
-        data = data.nlargest(n_matches, 'relevance')
+        data = data[data.relevance > len(tags)*0.5].nlargest(n_matches, 'relevance')
         
         df = self._to_df(data.index)
         
