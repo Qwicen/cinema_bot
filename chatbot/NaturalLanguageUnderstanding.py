@@ -34,6 +34,7 @@ class MoviePlot:
             all_tags.update(match)
         
         return list(all_tags)
+
     
     
     def _to_df(self, movies):
@@ -45,12 +46,13 @@ class MoviePlot:
         data = pd.DataFrame()
         for title in titles:
             data = pd.concat([data, self.tmdb[self.tmdb['title'] == title]])
-            
+
         return data[['title', 'imdbId', 'tmdbId']]
     
     
     def plot2movie(self, text, n_matches=10):
         """ Find movies based on matched tags with highest total score.
+
         
         Parameters
         ----------
@@ -65,7 +67,7 @@ class MoviePlot:
         df : pd.DataFrame
             DataFrame of movies with shape (n_matches, [title, imdbId, tmdbId])
         """
-        
+
         tags = self._text_to_tags(text)
         
         data = self.scores[self.scores.tagId.isin(tags)].groupby('movieId').sum()
@@ -74,6 +76,7 @@ class MoviePlot:
         df = self._to_df(data.index)
         
         return df
+
    
       
 class NER:
