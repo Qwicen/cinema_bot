@@ -6,13 +6,14 @@ from gensim.models import Doc2Vec
 import pandas as pd
 import difflib
 import pickle
-
+import re
+import datetime
 
 class MoviePlot:
     
     root_path = "models/plot2movie/"
     
-    scores = pd.read_csv(root_path + 'weights/df_scores.csv')
+    scores = pd.read_csv(root_path + 'df_scores.csv')
     tmdb = pd.read_csv(root_path + 'movieID.csv')
     
     with open(root_path + 'dict_tags.pkl', 'rb') as fin:
@@ -103,5 +104,16 @@ class NER:
                 s['GENRE'] = set.union(set(word for word in genre.split() if word not in (stopwords.words('english'))), s['GENRE'])
         return s 
 
-def extractYear(message):
-    return "2007"
+def extract_year(text):
+    match = re.search(r'\d{4}', text)
+    if match == None and re.search(r'\d{2}', text) != None:
+      match = re.search(r'\d{2}', text)
+      return '19'+match.group()
+    if match == None:
+      this_year = datetime.datetime.now().year
+      word_dict = {'last': this_year-1, 'this': this_year, 'new': this_year+1}
+      for word in word_dict.keys():
+        if re.search(word, text) != None:
+          return word_dict[word]
+      return None
+    return match.group()

@@ -67,63 +67,65 @@ def pipeline(message):
     if len(Slots[message.chat.id]) == 1:
         if 'ACTOR' in Slots[message.chat.id]:
             return dm.States.R_CLARIFY_GENRE.value
-    # Processing
+    # Processing Plot
     if 'PLOT' in Slots[message.chat.id]:
+        n_matches = 5
         plot = " ".join(Slots[message.chat.id]['PLOT'])
-        df = nlu.MoviePlot.plot2movie(plot, n_matches=5)
-        films = dm.api_movie(config.DB_API_TOKEN, df['tmdbId'].iloc[:5].values)
-        dm.save_request(message.chat.id, message.message_id + 2, films)
-        dm.save_page(message.chat.id, message.message_id + 2, page=1)
-        return dm.States.R_OK.value
-
-    else:
-        actors_id = []; genres_id = []; director_id = []; keywords_id = []; year=None
-        if 'GENRE' in Slots[message.chat.id]:
-            for genre in Slots[message.chat.id]['GENRE']:
-                closest = dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys()))
-                if closest == False:
-                    keywords = dm.api_search_keyword(config.DB_API_TOKEN, genre)
-                    if 'KEYWORDS' in Slots[message.chat.id]:
-                        Slots[message.chat.id]['KEYWORDS'] = set.union(keywords, Slots[message.chat.id]['KEYWORDS'])
-                    else:
-                        Slots[message.chat.id]['KEYWORDS'] = keywords
-                    keywords_id = Slots[message.chat.id]['KEYWORDS']
+        df = nlu.MoviePlot.plot2movie(plot, n_matches=n_matches)
+        max_page = n_matches if df.shape[0] >= n_matches else df.shape[0]
+        if max_page != 0:
+            films = dm.api_movie(config.DB_API_TOKEN, df['tmdbId'].iloc[:max_page].values)
+            dm.save_request(message.chat.id, message.message_id + 2, films)
+            dm.save_page(message.chat.id, message.message_id + 2, page=1)
+            return dm.States.R_OK.value
+    # If plot gives no result
+    actors_id = []; genres_id = []; director_id = []; keywords_id = []; year=None
+    if 'GENRE' in Slots[message.chat.id]:
+        for genre in Slots[message.chat.id]['GENRE']:
+            closest = dm.find_levenshtein_closest(genre, list(dm.ApiDicts.genre_to_id.keys()))
+            if closest == False:
+                keywords = dm.api_search_keyword(config.DB_API_TOKEN, genre)
+                if 'KEYWORDS' in Slots[message.chat.id]:
+                    Slots[message.chat.id]['KEYWORDS'] = set.union(keywords, Slots[message.chat.id]['KEYWORDS'])
                 else:
-                    genres_id.append(dm.ApiDicts.genre_to_id[closest])
-            if len(genres_id) == 0:
-                return dm.States.R_CLARIFY_GENRE.value
-        if 'ACTOR' in Slots[message.chat.id]:
-            for actor in Slots[message.chat.id]['ACTOR'].copy():
-                if actor in dm.ApiDicts.person_to_id:
-                    actors_id.append(dm.ApiDicts.person_to_id[actor][0])
-                else:
-                    bot.send_message(message.chat.id, "I don’t know who is " + actor + ". Please, check spelling.")
-                    Slots[message.chat.id]['ACTOR'].remove(actor)
-            if len(actors_id) == 0:        
-                return dm.States.R_CLARIFY_ACTOR.value
-
-        if 'DIRECTOR' in Slots[message.chat.id]:
-            for director in Slots[message.chat.id]['DIRECTOR'].copy():
-                if director in dm.ApiDicts.person_to_id:
-                    director_id.append(dm.ApiDicts.person_to_id[director][0])
-                else:
-                    bot.send_message(message.chat.id, "I don’t know who is " + director + ". Please, check spelling.")
-                    Slots[message.chat.id]['DIRECTOR'].remove(director)
-
-        if 'YEAR' in Slots[message.chat.id]:
-            year = nlu.extractYear(Slots[message.chat.id]['YEAR'])
-
-        if len(genres_id + actors_id + director_id + keywords_id) != 0:
-            print("Call API with genres=", genres_id, " and actors=", actors_id, " and directors=", director_id)
-            films = dm.api_discover(config.DB_API_TOKEN, genres=genres_id, actors=actors_id, crew=director_id, keywords=keywords_id, year=year)
-            if json.loads(films)["total_results"] == 0:
-                return dm.States.R_NONE.value
+                    Slots[message.chat.id]['KEYWORDS'] = keywords
+                keywords_id = Slots[message.chat.id]['KEYWORDS']
             else:
-                dm.save_request(message.chat.id, message.message_id + 2, films)
-                dm.save_page(message.chat.id, message.message_id + 2, page=1)
-                return dm.States.R_OK.value
-        else:
+                genres_id.append(dm.ApiDicts.genre_to_id[closest])
+        if len(genres_id) == 0:
+            return dm.States.R_CLARIFY_GENRE.value
+    if 'ACTOR' in Slots[message.chat.id]:
+        for actor in Slots[message.chat.id]['ACTOR'].copy():
+            if actor in dm.ApiDicts.person_to_id:
+                actors_id.append(dm.ApiDicts.person_to_id[actor][0])
+            else:
+                bot.send_message(message.chat.id, "I don’t know who is " + actor + ". Please, check spelling.")
+                Slots[message.chat.id]['ACTOR'].remove(actor)
+        if len(actors_id) == 0:        
+            return dm.States.R_CLARIFY_ACTOR.value
+
+    if 'DIRECTOR' in Slots[message.chat.id]:
+        for director in Slots[message.chat.id]['DIRECTOR'].copy():
+            if director in dm.ApiDicts.person_to_id:
+                director_id.append(dm.ApiDicts.person_to_id[director][0])
+            else:
+                bot.send_message(message.chat.id, "I don’t know who is " + director + ". Please, check spelling.")
+                Slots[message.chat.id]['DIRECTOR'].remove(director)
+
+    if 'YEAR' in Slots[message.chat.id]:
+        year = nlu.extractYear(Slots[message.chat.id]['YEAR'])
+
+    if len(genres_id + actors_id + director_id + keywords_id) != 0:
+        print("Call API with genres=", genres_id, " and actors=", actors_id, " and directors=", director_id)
+        films = dm.api_discover(config.DB_API_TOKEN, genres=genres_id, actors=actors_id, crew=director_id, keywords=keywords_id, year=year)
+        if json.loads(films)["total_results"] == 0:
             return dm.States.R_NONE.value
+        else:
+            dm.save_request(message.chat.id, message.message_id + 2, films)
+            dm.save_page(message.chat.id, message.message_id + 2, page=1)
+            return dm.States.R_OK.value
+    else:
+        return dm.States.R_NONE.value
 
     
 @bot.callback_query_handler(func=lambda call: True)

@@ -99,7 +99,7 @@ def api_movie(api_key, movie_ids):
         url = base_url + str(idx)
         response = requests.request('GET', url, data=payload)
         descriptions.append(response.text)
-    return "{ \"results\": [ " + ", ".join(descriptions) + " ], \"total_results\": 5}"
+    return "{ \"results\": [ " + ", ".join(descriptions) + " ], \"total_results\": {}}}".format(movie_ids.shape[0])
 
 def api_search_keyword(api_key, keyword):
     url = "https://api.themoviedb.org/3/search/keyword"
