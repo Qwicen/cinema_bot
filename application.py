@@ -101,8 +101,8 @@ def pipeline(message):
             return dm.States.R_CLARIFY_GENRE.value, message_counter
     if 'ACTOR' in Slots[message.chat.id]:
         for actor in Slots[message.chat.id]['ACTOR'].copy():
-            if actor in dm.ApiDicts.person_to_id:
-                actors_id.append(dm.ApiDicts.person_to_id[actor][0])
+            if actor.lower() in dm.ApiDicts.person_to_id:
+                actors_id.append(dm.ApiDicts.person_to_id[actor.lower()][0])
             else:
                 message_counter += 1
                 bot.send_message(message.chat.id, "I don’t know who is " + actor + ". Please, check spelling.")
@@ -112,8 +112,8 @@ def pipeline(message):
 
     if 'DIRECTOR' in Slots[message.chat.id]:
         for director in Slots[message.chat.id]['DIRECTOR'].copy():
-            if director in dm.ApiDicts.person_to_id:
-                director_id.append(dm.ApiDicts.person_to_id[director][0])
+            if director.lower() in dm.ApiDicts.person_to_id:
+                director_id.append(dm.ApiDicts.person_to_id[director.lower()][0])
             else:
                 message_counter += 1
                 bot.send_message(message.chat.id, "I don’t know who is " + director + ". Please, check spelling.")
