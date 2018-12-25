@@ -26,6 +26,8 @@ def cmd_help(message):
 
 @bot.message_handler(func=lambda message: True)
 def user_entering_description(message):
+    logger.info(message.from_user.first_name)
+    logger.info(message.text)
     decision, message_counter = pipeline(message)
     print("decision on message: " + message.text, decision)
     if decision == dm.States.R_OK.value:
@@ -41,7 +43,7 @@ def user_entering_description(message):
         bot.send_message(message.chat.id, nlg.specifyActor())
     elif decision == dm.States.R_CLARIFY_ALL.value:
         bot.send_message(message.chat.id, "Sorry, I don’t understand")
-        bot.send_message(message.chat.id, "Please be more spectific with the description")
+        bot.send_message(message.chat.id, "Please be more specific with the description")
     elif decision == dm.States.R_DONE.value:
         pass
     elif decision == dm.States.R_NONE.value:
@@ -60,7 +62,8 @@ def pipeline(message):
                 Slots[message.chat.id][slot] = slots[slot]
     else:
         Slots[message.chat.id] = slots
-    print("###SLOTS###", Slots)
+    logger.info("###SLOTS###")
+    logger.info(Slots)
     # Clarifyings
     if len(Slots[message.chat.id]) == 0:
         return dm.States.R_CLARIFY_ALL.value, message_counter
