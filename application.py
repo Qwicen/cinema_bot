@@ -97,7 +97,7 @@ def pipeline(message):
                     keywords_id = Slots[message.chat.id]['KEYWORDS']
             else:
                 genres_id.append(dm.ApiDicts.genre_to_id[closest])
-        if len(genres_id) == 0:
+        if len(genres_id) == 0 and len(list(keywords_id)) == 0:
             return dm.States.R_CLARIFY_GENRE.value, message_counter
     if 'ACTOR' in Slots[message.chat.id]:
         for actor in Slots[message.chat.id]['ACTOR'].copy():
